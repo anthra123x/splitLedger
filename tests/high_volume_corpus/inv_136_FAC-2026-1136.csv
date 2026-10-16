@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1136;FECHA;2026-10-25
+PROVEEDOR;Carlos Ruiz Ingeniero Colegiado;NIF;52091482X
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Auditoría de Seguridad Forense y Endurecimiento OWASP;3;550.00;1650.00;21.0%;1996.50
+Consultoría Arquitectura Software y Refactorización;1;600.00;600.00;21.0%;726.00
+
+Subtotal;2250.00
+Cuota IVA (21%);472.50
+Retención IRPF (15%);337.50
+Total Factura;2385.00

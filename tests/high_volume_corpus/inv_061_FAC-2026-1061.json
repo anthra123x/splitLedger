@@ -1,0 +1,44 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1061",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Mapfre Empresas Seguros S.A.",
+    "tax_id": "A28141935",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Cobertura de Ciberriesgos y Pérdida de Datos",
+      "quantity": 3,
+      "unit_price": 410.0,
+      "taxable_amount": 1230.0,
+      "tax_rate_percentage": 0.0,
+      "tax_amount": 0.0,
+      "total_amount": 1230.0
+    },
+    {
+      "description": "Póliza de Responsabilidad Civil Profesional Tecnológica",
+      "quantity": 3,
+      "unit_price": 620.0,
+      "taxable_amount": 1860.0,
+      "tax_rate_percentage": 0.0,
+      "tax_amount": 0.0,
+      "total_amount": 1860.0
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 3090.0,
+    "tax_total_amount": 0.0,
+    "retention_amount": 0.0,
+    "grand_total_amount": 3090.0
+  }
+}

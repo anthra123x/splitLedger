@@ -1,0 +1,53 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1068",
+    "issue_date": "2026-10-13",
+    "due_date": "2026-11-13",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Vodafone España S.A.U.",
+    "tax_id": "A80907397",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G",
+      "quantity": 1,
+      "unit_price": 35.0,
+      "taxable_amount": 35.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 7.35,
+      "total_amount": 42.35
+    },
+    {
+      "description": "Servicio Backup 4G LTE Continuidad Negocio",
+      "quantity": 1,
+      "unit_price": 25.0,
+      "taxable_amount": 25.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 5.25,
+      "total_amount": 30.25
+    },
+    {
+      "description": "Troncal SIP Comunicaciones IP Centralita 30 Canales",
+      "quantity": 3,
+      "unit_price": 85.0,
+      "taxable_amount": 255.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 53.55,
+      "total_amount": 308.55
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 315.0,
+    "tax_total_amount": 66.15,
+    "retention_amount": 0.0,
+    "grand_total_amount": 381.15
+  }
+}

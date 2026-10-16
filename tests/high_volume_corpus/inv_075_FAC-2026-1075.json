@@ -1,0 +1,44 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1075",
+    "issue_date": "2026-10-20",
+    "due_date": "2026-11-20",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Restaurante Asador Donostia S.L.",
+    "tax_id": "B84920194",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Servicio de Restauración y Bebidas Reunión Comercial",
+      "quantity": 3,
+      "unit_price": 75.0,
+      "taxable_amount": 225.0,
+      "tax_rate_percentage": 10.0,
+      "tax_amount": 22.5,
+      "total_amount": 247.5
+    },
+    {
+      "description": "Menú Ejecutivo Degustación Empresa (4 Comensales)",
+      "quantity": 1,
+      "unit_price": 160.0,
+      "taxable_amount": 160.0,
+      "tax_rate_percentage": 10.0,
+      "tax_amount": 16.0,
+      "total_amount": 176.0
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 385.0,
+    "tax_total_amount": 38.5,
+    "retention_amount": 0.0,
+    "grand_total_amount": 423.5
+  }
+}

@@ -1,0 +1,14 @@
+FACTURA: FAC-2026-1133
+Fecha de Emisión: 2026-10-22 | Vencimiento: 2026-11-22
+Proveedor: SEUR GeoPost S.L. | NIF: B82910341
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Transporte Paletizado Carga Pesada Nacional | Cantidad: 2 x 240.00 | Base: 480.00 | IVA: 100.80 | Total: 580.80 EUR
+- Servicio Courier Express 24h Documentación | Cantidad: 3 x 42.50 | Base: 127.50 | IVA: 26.77 | Total: 154.27 EUR
+- Gestión Aduanera y Tasa de Manipulación Portuaria | Cantidad: 2 x 65.00 | Base: 130.00 | IVA: 27.30 | Total: 157.30 EUR
+
+Subtotal (Base Imponible): 737.50 EUR
+Cuota IVA (21%): 154.88 EUR
+Total Factura: 892.38 EUR

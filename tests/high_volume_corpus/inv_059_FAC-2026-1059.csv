@@ -1,0 +1,11 @@
+FACTURA;FAC-2026-1059;FECHA;2026-10-04
+PROVEEDOR;Restaurante Asador Donostia S.L.;NIF;B84920194
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Servicio de Restauración y Bebidas Reunión Comercial;1;75.00;75.00;10.0%;82.50
+
+Subtotal;75.00
+Cuota IVA (10%);7.50
+Total Factura;82.50

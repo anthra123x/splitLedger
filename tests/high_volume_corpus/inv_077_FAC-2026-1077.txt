@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1077
+Fecha de Emisión: 2026-10-22 | Vencimiento: 2026-11-22
+Proveedor: Mapfre Empresas Seguros S.A. | NIF: A28141935
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Cobertura de Ciberriesgos y Pérdida de Datos | Cantidad: 1 x 410.00 | Base: 410.00 | IVA: 0.00 | Total: 410.00 EUR
+- Póliza de Responsabilidad Civil Profesional Tecnológica | Cantidad: 2 x 620.00 | Base: 1240.00 | IVA: 0.00 | Total: 1240.00 EUR
+
+Subtotal (Base Imponible): 1650.00 EUR
+Cuota IVA (0%): 0.00 EUR
+Total Factura: 1650.00 EUR

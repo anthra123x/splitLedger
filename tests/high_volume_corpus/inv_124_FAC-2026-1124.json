@@ -1,0 +1,44 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1124",
+    "issue_date": "2026-10-13",
+    "due_date": "2026-11-13",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Mantenimiento Técnico Industrial S.L.",
+    "tax_id": "B81928374",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Mantenimiento Preventivo Sistemas de Climatización",
+      "quantity": 1,
+      "unit_price": 195.0,
+      "taxable_amount": 195.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 40.95,
+      "total_amount": 235.95
+    },
+    {
+      "description": "Sustitución de Filtros HEPA y Recarga de Gas Refrigerante",
+      "quantity": 2,
+      "unit_price": 145.0,
+      "taxable_amount": 290.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 60.9,
+      "total_amount": 350.9
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 485.0,
+    "tax_total_amount": 101.85,
+    "retention_amount": 0.0,
+    "grand_total_amount": 586.85
+  }
+}

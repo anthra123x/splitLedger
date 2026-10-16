@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1018	FECHA	2026-10-19
+PROVEEDOR	Microsoft Ireland Operations Ltd	NIF	IE8256796U
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Microsoft Azure Virtual Network Gateway & ExpressRoute	3	210.00	630.00	21.0%	762.30
+
+Subtotal	630.00
+Cuota IVA (21%)	132.30
+Total Factura	762.30

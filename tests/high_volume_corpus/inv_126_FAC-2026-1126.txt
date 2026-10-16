@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1126
+Fecha de Emisión: 2026-10-15 | Vencimiento: 2026-11-15
+Proveedor: Google LLC (US Mountain View) | NIF: US94275684
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: USD
+
+DESGLOSE DE PARTIDAS:
+- Neon Serverless PostgreSQL Compute Units & Storage | Cantidad: 3 x 68.00 | Base: 204.00 | IVA: 42.84 | Total: 246.84 USD
+- Amazon S3 Standard Storage (12.4 TB/mes) | Cantidad: 1 x 285.20 | Base: 285.20 | IVA: 59.89 | Total: 345.09 USD
+
+Subtotal (Base Imponible): 489.20 USD
+Cuota IVA (21%): 102.73 USD
+Total Factura: 591.93 USD

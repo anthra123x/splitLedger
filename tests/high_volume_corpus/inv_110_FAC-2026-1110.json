@@ -1,0 +1,62 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1110",
+    "issue_date": "2026-10-27",
+    "due_date": "2026-11-27",
+    "currency": "USD"
+  },
+  "issuer": {
+    "company_name": "Google LLC (US Mountain View)",
+    "tax_id": "US94275684",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Neon Serverless PostgreSQL Compute Units & Storage",
+      "quantity": 3,
+      "unit_price": 68.0,
+      "taxable_amount": 204.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 42.84,
+      "total_amount": 246.84
+    },
+    {
+      "description": "Microsoft Azure Virtual Network Gateway & ExpressRoute",
+      "quantity": 1,
+      "unit_price": 210.0,
+      "taxable_amount": 210.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 44.1,
+      "total_amount": 254.1
+    },
+    {
+      "description": "Amazon S3 Standard Storage (12.4 TB/mes)",
+      "quantity": 1,
+      "unit_price": 285.2,
+      "taxable_amount": 285.2,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 59.89,
+      "total_amount": 345.09
+    },
+    {
+      "description": "Google Cloud Kubernetes Engine (GKE Cluster)",
+      "quantity": 3,
+      "unit_price": 95.0,
+      "taxable_amount": 285.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 59.85,
+      "total_amount": 344.85
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 984.2,
+    "tax_total_amount": 206.68,
+    "retention_amount": 0.0,
+    "grand_total_amount": 1190.88
+  }
+}

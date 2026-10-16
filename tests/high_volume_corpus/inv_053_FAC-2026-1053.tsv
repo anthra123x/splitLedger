@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1053	FECHA	2026-10-26
+PROVEEDOR	SEUR GeoPost S.L.	NIF	B82910341
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Servicio Courier Express 24h Documentación	3	42.50	127.50	21.0%	154.27
+Gestión Aduanera y Tasa de Manipulación Portuaria	1	65.00	65.00	21.0%	78.65
+
+Subtotal	192.50
+Cuota IVA (21%)	40.42
+Total Factura	232.92

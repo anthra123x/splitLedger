@@ -1,0 +1,14 @@
+FACTURA;FAC-2026-1038;FECHA;2026-10-11
+PROVEEDOR;DHL Express Spain S.L.U.;NIF;B28043685
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Gestión Aduanera y Tasa de Manipulación Portuaria;3;65.00;195.00;21.0%;235.95
+Servicio Courier Express 24h Documentación;1;42.50;42.50;21.0%;51.43
+Seguro de Mercancía en Tránsito Terrestre;2;38.00;76.00;21.0%;91.96
+Transporte Paletizado Carga Pesada Nacional;3;240.00;720.00;21.0%;871.20
+
+Subtotal;1033.50
+Cuota IVA (21%);217.03
+Total Factura;1250.53

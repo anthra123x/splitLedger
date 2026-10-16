@@ -1,0 +1,14 @@
+FACTURA: FAC-2026-1063
+Fecha de Emisión: 2026-10-08 | Vencimiento: 2026-11-08
+Proveedor: Cloudflare Inc. San Francisco | NIF: US27019284
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: USD
+
+DESGLOSE DE PARTIDAS:
+- Google Cloud Kubernetes Engine (GKE Cluster) | Cantidad: 2 x 95.00 | Base: 190.00 | IVA: 39.90 | Total: 229.90 USD
+- Amazon S3 Standard Storage (12.4 TB/mes) | Cantidad: 1 x 285.20 | Base: 285.20 | IVA: 59.89 | Total: 345.09 USD
+- Microsoft Azure Virtual Network Gateway & ExpressRoute | Cantidad: 2 x 210.00 | Base: 420.00 | IVA: 88.20 | Total: 508.20 USD
+
+Subtotal (Base Imponible): 895.20 USD
+Cuota IVA (21%): 187.99 USD
+Total Factura: 1083.19 USD

@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1067	FECHA	2026-10-12
+PROVEEDOR	Telefónica de España S.A.U.	NIF	A28015865
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G	1	35.00	35.00	21.0%	42.35
+Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps	2	115.00	230.00	21.0%	278.30
+
+Subtotal	265.00
+Cuota IVA (21%)	55.65
+Total Factura	320.65

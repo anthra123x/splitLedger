@@ -1,0 +1,62 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1089",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Hardware & Servers Distribución S.L.",
+    "tax_id": "B85019284",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Monitor Profesional 27 Pulgadas 4K IPS Dell",
+      "quantity": 2,
+      "unit_price": 310.0,
+      "taxable_amount": 620.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 130.2,
+      "total_amount": 750.2
+    },
+    {
+      "description": "Servidor Rack Dell PowerEdge R650 32GB RAM",
+      "quantity": 1,
+      "unit_price": 1450.0,
+      "taxable_amount": 1450.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 304.5,
+      "total_amount": 1754.5
+    },
+    {
+      "description": "Disco SSD NVMe Enterprise 3.84TB U.2",
+      "quantity": 3,
+      "unit_price": 295.0,
+      "taxable_amount": 885.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 185.85,
+      "total_amount": 1070.85
+    },
+    {
+      "description": "Switch Gestionable Cisco Catalyst 24 Puertos PoE+",
+      "quantity": 1,
+      "unit_price": 420.0,
+      "taxable_amount": 420.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 88.2,
+      "total_amount": 508.2
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 3375.0,
+    "tax_total_amount": 708.75,
+    "retention_amount": 0.0,
+    "grand_total_amount": 4083.75
+  }
+}

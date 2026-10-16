@@ -1,0 +1,29 @@
+Alejandro Mendoza Gómez
+Consultor y Arquitecto Software
+Calle Princesa 12, 3ºB, 28008 Madrid
+NIF: 47281920Z
+
+FACTURA DE HONORARIOS PROFESIONALES
+Número de Factura: DEV-2024-042
+Fecha de Expedición: 2024-10-12
+Vencimiento: 2024-11-12
+
+DESTINATARIO:
+SplitLedger Engineering Labs S.L.
+Calle Velázquez 45, 28001 Madrid
+CIF: B87219034
+
+DETALLE DE SERVICIOS PRESTADOS:
+Descripción del Servicio o Partida                   Horas/Uds    Tarifa       Base EUR
+----------------------------------------------------------------------------------------
+Auditoría y Refactorización de Microservicios Node           1   1800.00 €     1800.00 €
+Implementación de Pipeline CI/CD y Hardening OWASP           1    700.00 €      700.00 €
+----------------------------------------------------------------------------------------
+Subtotal Base Imponible:                                                       2500.00 €
+IVA (+21%):                                                                    +525.00 €
+Retención IRPF (-15%):                                                         -375.00 €
+----------------------------------------------------------------------------------------
+Importe Total a Pagar:                                                         2650.00 €
+
+Ingreso en cuenta ES45 0049 1500 0512 3456 7890
+Régimen especial de trabajadores autónomos (RETA).

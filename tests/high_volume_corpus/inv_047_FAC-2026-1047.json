@@ -1,0 +1,35 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1047",
+    "issue_date": "2026-10-20",
+    "due_date": "2026-11-20",
+    "currency": "USD"
+  },
+  "issuer": {
+    "company_name": "Cloudflare Inc. San Francisco",
+    "tax_id": "US27019284",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Vercel Pro Enterprise Team Subscription",
+      "quantity": 2,
+      "unit_price": 40.0,
+      "taxable_amount": 80.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 16.8,
+      "total_amount": 96.8
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 80.0,
+    "tax_total_amount": 16.8,
+    "retention_amount": 0.0,
+    "grand_total_amount": 96.8
+  }
+}

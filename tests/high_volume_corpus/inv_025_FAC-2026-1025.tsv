@@ -1,0 +1,14 @@
+FACTURA	FAC-2026-1025	FECHA	2026-10-26
+PROVEEDOR	Hardware & Servers Distribución S.L.	NIF	B85019284
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Monitor Profesional 27 Pulgadas 4K IPS Dell	2	310.00	620.00	21.0%	750.20
+Servidor Rack Dell PowerEdge R650 32GB RAM	2	1450.00	2900.00	21.0%	3509.00
+Disco SSD NVMe Enterprise 3.84TB U.2	2	295.00	590.00	21.0%	713.90
+Switch Gestionable Cisco Catalyst 24 Puertos PoE+	1	420.00	420.00	21.0%	508.20
+
+Subtotal	4530.00
+Cuota IVA (21%)	951.30
+Total Factura	5481.30

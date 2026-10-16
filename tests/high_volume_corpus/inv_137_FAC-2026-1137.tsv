@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1137	FECHA	2026-10-26
+PROVEEDOR	Hardware & Servers Distribución S.L.	NIF	B85019284
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Monitor Profesional 27 Pulgadas 4K IPS Dell	3	310.00	930.00	21.0%	1125.30
+Disco SSD NVMe Enterprise 3.84TB U.2	2	295.00	590.00	21.0%	713.90
+
+Subtotal	1520.00
+Cuota IVA (21%)	319.20
+Total Factura	1839.20

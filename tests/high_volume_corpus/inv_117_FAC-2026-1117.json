@@ -1,0 +1,44 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1117",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "SEUR GeoPost S.L.",
+    "tax_id": "B82910341",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Transporte Paletizado Carga Pesada Nacional",
+      "quantity": 1,
+      "unit_price": 240.0,
+      "taxable_amount": 240.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 50.4,
+      "total_amount": 290.4
+    },
+    {
+      "description": "Servicio Courier Express 24h Documentación",
+      "quantity": 1,
+      "unit_price": 42.5,
+      "taxable_amount": 42.5,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 8.93,
+      "total_amount": 51.42
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 282.5,
+    "tax_total_amount": 59.32,
+    "retention_amount": 0.0,
+    "grand_total_amount": 341.82
+  }
+}

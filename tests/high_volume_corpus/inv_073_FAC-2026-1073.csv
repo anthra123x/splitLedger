@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1073;FECHA;2026-10-18
+PROVEEDOR;Hardware & Servers Distribución S.L.;NIF;B85019284
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Switch Gestionable Cisco Catalyst 24 Puertos PoE+;1;420.00;420.00;21.0%;508.20
+Servidor Rack Dell PowerEdge R650 32GB RAM;1;1450.00;1450.00;21.0%;1754.50
+Disco SSD NVMe Enterprise 3.84TB U.2;3;295.00;885.00;21.0%;1070.85
+
+Subtotal;2755.00
+Cuota IVA (21%);578.55
+Total Factura;3333.55

@@ -1,0 +1,11 @@
+FACTURA;FAC-2026-1108;FECHA;2026-10-25
+PROVEEDOR;Mantenimiento Técnico Industrial S.L.;NIF;B81928374
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Sustitución de Filtros HEPA y Recarga de Gas Refrigerante;3;145.00;435.00;21.0%;526.35
+
+Subtotal;435.00
+Cuota IVA (21%);91.35
+Total Factura;526.35

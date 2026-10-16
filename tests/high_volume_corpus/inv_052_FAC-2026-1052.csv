@@ -1,0 +1,14 @@
+FACTURA;FAC-2026-1052;FECHA;2026-10-25
+PROVEEDOR;Vodafone España S.A.U.;NIF;A80907397
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps;3;115.00;345.00;21.0%;417.45
+Troncal SIP Comunicaciones IP Centralita 30 Canales;3;85.00;255.00;21.0%;308.55
+Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G;2;35.00;70.00;21.0%;84.70
+Servicio Backup 4G LTE Continuidad Negocio;1;25.00;25.00;21.0%;30.25
+
+Subtotal;695.00
+Cuota IVA (21%);145.95
+Total Factura;840.95

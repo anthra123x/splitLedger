@@ -1,0 +1,12 @@
+FACTURA;FAC-2026-1031;FECHA;2026-10-04
+PROVEEDOR;Cloudflare Inc. San Francisco;NIF;US27019284
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;USD
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Amazon S3 Standard Storage (12.4 TB/mes);2;285.20;570.40;21.0%;690.18
+Vercel Pro Enterprise Team Subscription;2;40.00;80.00;21.0%;96.80
+
+Subtotal;650.40
+Cuota IVA (21%);136.58
+Total Factura;786.98

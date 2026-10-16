@@ -1,0 +1,35 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1145",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Google Cloud Ireland Limited",
+    "tax_id": "IE6388047V",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Neon Serverless PostgreSQL Compute Units & Storage",
+      "quantity": 3,
+      "unit_price": 68.0,
+      "taxable_amount": 204.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 42.84,
+      "total_amount": 246.84
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 204.0,
+    "tax_total_amount": 42.84,
+    "retention_amount": 0.0,
+    "grand_total_amount": 246.84
+  }
+}

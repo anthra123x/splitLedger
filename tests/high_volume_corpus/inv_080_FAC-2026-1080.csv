@@ -1,0 +1,12 @@
+FACTURA;FAC-2026-1080;FECHA;2026-10-25
+PROVEEDOR;Amazon Web Services EMEA SARL;NIF;LU26375245
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Amazon S3 Standard Storage (12.4 TB/mes);3;285.20;855.60;21.0%;1035.28
+Neon Serverless PostgreSQL Compute Units & Storage;3;68.00;204.00;21.0%;246.84
+
+Subtotal;1059.60
+Cuota IVA (21%);222.52
+Total Factura;1282.12

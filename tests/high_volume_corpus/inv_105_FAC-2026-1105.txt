@@ -1,0 +1,12 @@
+FACTURA: FAC-2026-1105
+Fecha de Emisión: 2026-10-22 | Vencimiento: 2026-11-22
+Proveedor: Hardware & Servers Distribución S.L. | NIF: B85019284
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Switch Gestionable Cisco Catalyst 24 Puertos PoE+ | Cantidad: 3 x 420.00 | Base: 1260.00 | IVA: 264.60 | Total: 1524.60 EUR
+
+Subtotal (Base Imponible): 1260.00 EUR
+Cuota IVA (21%): 264.60 EUR
+Total Factura: 1524.60 EUR

@@ -1,0 +1,14 @@
+FACTURA: FAC-2026-1049
+Fecha de Emisión: 2026-10-22 | Vencimiento: 2026-11-22
+Proveedor: Google Cloud Ireland Limited | NIF: IE6388047V
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Amazon Elastic Compute Cloud (EC2) c6g.2xlarge | Cantidad: 1 x 185.00 | Base: 185.00 | IVA: 38.85 | Total: 223.85 EUR
+- Google Cloud BigQuery Compute Engine On-Demand | Cantidad: 2 x 145.50 | Base: 291.00 | IVA: 61.11 | Total: 352.11 EUR
+- Microsoft Azure Virtual Network Gateway & ExpressRoute | Cantidad: 3 x 210.00 | Base: 630.00 | IVA: 132.30 | Total: 762.30 EUR
+
+Subtotal (Base Imponible): 1106.00 EUR
+Cuota IVA (21%): 232.26 EUR
+Total Factura: 1338.26 EUR

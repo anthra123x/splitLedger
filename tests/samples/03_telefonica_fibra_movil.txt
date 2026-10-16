@@ -1,0 +1,27 @@
+Telefónica de España S.A.U.
+Gran Vía 28, 28013 Madrid, España
+NIF: A28015865
+
+FACTURA DE TELECOMUNICACIONES
+Número de Factura: TF-2024-90412
+Fecha de Emisión: 2024-10-05
+Periodo de Facturación: 01/09/2024 al 30/09/2024
+
+CLIENTE:
+SplitLedger Engineering Labs S.L.
+Calle Velázquez 45, 28001 Madrid
+CIF: B87219034
+
+RESUMEN DE CONCEPTOS FACTURADOS:
+Concepto                                          Unidades    Precio     Importe EUR
+------------------------------------------------------------------------------------
+Conectividad Fibra Óptica 1Gbps Simétrica                1     89.00 €       89.00 €
+Centralita Virtual Cloud Voz IP 5 Extensiones            1     45.00 €       45.00 €
+Líneas Móviles Plan Empresa 5G Datos Ilimitados          1    120.00 €      120.00 €
+------------------------------------------------------------------------------------
+Base Imponible (Subtotal):                                                  254.00 €
+IVA 21%:                                                                     53.34 €
+Retención IRPF:                                                               0.00 €
+Total Factura:                                                              307.34 €
+
+Forma de pago: Domiciliación bancaria en cuenta ES91 2100 0418 4502 0005 1324

@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1130	FECHA	2026-10-19
+PROVEEDOR	Microsoft Ireland Operations Ltd	NIF	IE8256796U
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Google Cloud BigQuery Compute Engine On-Demand	1	145.50	145.50	21.0%	176.05
+Neon Serverless PostgreSQL Compute Units & Storage	2	68.00	136.00	21.0%	164.56
+
+Subtotal	281.50
+Cuota IVA (21%)	59.11
+Total Factura	340.61

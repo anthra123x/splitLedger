@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1095	FECHA	2026-10-12
+PROVEEDOR	Cloudflare Inc. San Francisco	NIF	US27019284
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	USD
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Google Cloud Kubernetes Engine (GKE Cluster)	3	95.00	285.00	21.0%	344.85
+
+Subtotal	285.00
+Cuota IVA (21%)	59.85
+Total Factura	344.85

@@ -1,0 +1,12 @@
+FACTURA: FAC-2026-1112
+Fecha de Emisión: 2026-10-01 | Vencimiento: 2026-11-01
+Proveedor: Amazon Web Services EMEA SARL | NIF: LU26375245
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Google Cloud BigQuery Compute Engine On-Demand | Cantidad: 2 x 145.50 | Base: 291.00 | IVA: 61.11 | Total: 352.11 EUR
+
+Subtotal (Base Imponible): 291.00 EUR
+Cuota IVA (21%): 61.11 EUR
+Total Factura: 352.11 EUR

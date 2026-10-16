@@ -1,0 +1,24 @@
+Taberna Gastrobar Gran Vía S.L.
+Gran Vía 42, 28013 Madrid
+CIF: B89431201
+
+TICKET SIMPLIFICADO / FACTURA SIMPLIFICADA
+Ticket Nº: TKT-48910
+Fecha: 2024-10-14 14:35:12
+Mesa: 04 - Terraza
+
+Uds  Concepto                              Precio      Total
+------------------------------------------------------------
+  3  Menú del Día Ejecutivo                20.00 €   60.00 €
+  1  Botella Vino Ribera Reserva           25.00 €   25.00 €
+------------------------------------------------------------
+Desglose por tipo de IVA:
+Base IVA 10%:   54.55 €   Cuota 10%:   5.45 €    Total: 60.00 €
+Base IVA 21%:   20.66 €   Cuota 21%:   4.34 €    Total: 25.00 €
+
+Subtotal Base Imponible:                             75.21 €
+Total Cuota IVA:                                      9.79 €
+TOTAL A PAGAR:                                       85.00 €
+
+Pago: Tarjeta de Crédito VISA **** 8821
+¡Gracias por su visita!

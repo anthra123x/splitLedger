@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1070
+Fecha de Emisión: 2026-10-15 | Vencimiento: 2026-11-15
+Proveedor: DHL Express Spain S.L.U. | NIF: B28043685
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Servicio Courier Express 24h Documentación | Cantidad: 3 x 42.50 | Base: 127.50 | IVA: 26.77 | Total: 154.27 EUR
+- Gestión Aduanera y Tasa de Manipulación Portuaria | Cantidad: 3 x 65.00 | Base: 195.00 | IVA: 40.95 | Total: 235.95 EUR
+
+Subtotal (Base Imponible): 322.50 EUR
+Cuota IVA (21%): 67.72 EUR
+Total Factura: 390.22 EUR

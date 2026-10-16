@@ -1,0 +1,11 @@
+FACTURA;FAC-2026-1143;FECHA;2026-10-04
+PROVEEDOR;Cloudflare Inc. San Francisco;NIF;US27019284
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;USD
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Neon Serverless PostgreSQL Compute Units & Storage;1;68.00;68.00;21.0%;82.28
+
+Subtotal;68.00
+Cuota IVA (21%);14.28
+Total Factura;82.28

@@ -1,0 +1,12 @@
+FACTURA;FAC-2026-1122;FECHA;2026-10-11
+PROVEEDOR;Iberdrola Clientes S.A.U.;NIF;A95748375
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Consumo Energía Activa Punta y Valle (kWh);3;312.60;937.80;21.0%;1134.74
+Término de Potencia Contratada (P1 + P2);1;85.40;85.40;21.0%;103.33
+
+Subtotal;1023.20
+Cuota IVA (21%);214.87
+Total Factura;1238.07

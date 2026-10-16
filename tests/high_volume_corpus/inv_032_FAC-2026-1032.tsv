@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1032	FECHA	2026-10-05
+PROVEEDOR	Amazon Web Services EMEA SARL	NIF	LU26375245
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Amazon Elastic Compute Cloud (EC2) c6g.2xlarge	3	185.00	555.00	21.0%	671.55
+Google Cloud BigQuery Compute Engine On-Demand	3	145.50	436.50	21.0%	528.17
+
+Subtotal	991.50
+Cuota IVA (21%)	208.22
+Total Factura	1199.72

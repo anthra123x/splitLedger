@@ -1,0 +1,14 @@
+FACTURA: FAC-2026-1021
+Fecha de Emisión: 2026-10-22 | Vencimiento: 2026-11-22
+Proveedor: SEUR GeoPost S.L. | NIF: B82910341
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Gestión Aduanera y Tasa de Manipulación Portuaria | Cantidad: 2 x 65.00 | Base: 130.00 | IVA: 27.30 | Total: 157.30 EUR
+- Seguro de Mercancía en Tránsito Terrestre | Cantidad: 1 x 38.00 | Base: 38.00 | IVA: 7.98 | Total: 45.98 EUR
+- Transporte Paletizado Carga Pesada Nacional | Cantidad: 1 x 240.00 | Base: 240.00 | IVA: 50.40 | Total: 290.40 EUR
+
+Subtotal (Base Imponible): 408.00 EUR
+Cuota IVA (21%): 85.68 EUR
+Total Factura: 493.68 EUR

@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1056
+Fecha de Emisión: 2026-10-01 | Vencimiento: 2026-11-01
+Proveedor: Carlos Ruiz Ingeniero Colegiado | NIF: 52091482X
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Auditoría de Seguridad Forense y Endurecimiento OWASP | Cantidad: 2 x 550.00 | Base: 1100.00 | IVA: 231.00 | Total: 1331.00 EUR
+
+Subtotal (Base Imponible): 1100.00 EUR
+Cuota IVA (21%): 231.00 EUR
+Retención IRPF (15%): -165.00 EUR
+Total Factura: 1166.00 EUR

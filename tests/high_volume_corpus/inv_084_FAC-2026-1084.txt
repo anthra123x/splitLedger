@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1084
+Fecha de Emisión: 2026-10-01 | Vencimiento: 2026-11-01
+Proveedor: Vodafone España S.A.U. | NIF: A80907397
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G | Cantidad: 2 x 35.00 | Base: 70.00 | IVA: 14.70 | Total: 84.70 EUR
+- Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps | Cantidad: 1 x 115.00 | Base: 115.00 | IVA: 24.15 | Total: 139.15 EUR
+
+Subtotal (Base Imponible): 185.00 EUR
+Cuota IVA (21%): 38.85 EUR
+Total Factura: 223.85 EUR

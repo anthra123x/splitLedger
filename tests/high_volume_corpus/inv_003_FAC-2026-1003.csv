@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1003;FECHA;2026-10-04
+PROVEEDOR;Telefónica de España S.A.U.;NIF;A28015865
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Servicio Backup 4G LTE Continuidad Negocio;1;25.00;25.00;21.0%;30.25
+Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G;1;35.00;35.00;21.0%;42.35
+Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps;2;115.00;230.00;21.0%;278.30
+
+Subtotal;290.00
+Cuota IVA (21%);60.90
+Total Factura;350.90

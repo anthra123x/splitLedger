@@ -1,0 +1,53 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1054",
+    "issue_date": "2026-10-27",
+    "due_date": "2026-11-27",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "DHL Express Spain S.L.U.",
+    "tax_id": "B28043685",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Seguro de Mercancía en Tránsito Terrestre",
+      "quantity": 1,
+      "unit_price": 38.0,
+      "taxable_amount": 38.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 7.98,
+      "total_amount": 45.98
+    },
+    {
+      "description": "Gestión Aduanera y Tasa de Manipulación Portuaria",
+      "quantity": 3,
+      "unit_price": 65.0,
+      "taxable_amount": 195.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 40.95,
+      "total_amount": 235.95
+    },
+    {
+      "description": "Transporte Paletizado Carga Pesada Nacional",
+      "quantity": 2,
+      "unit_price": 240.0,
+      "taxable_amount": 480.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 100.8,
+      "total_amount": 580.8
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 713.0,
+    "tax_total_amount": 149.73,
+    "retention_amount": 0.0,
+    "grand_total_amount": 862.73
+  }
+}

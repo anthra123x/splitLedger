@@ -1,0 +1,13 @@
+FACTURA	FAC-2026-1144	FECHA	2026-10-05
+PROVEEDOR	Amazon Web Services EMEA SARL	NIF	LU26375245
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Google Cloud BigQuery Compute Engine On-Demand	3	145.50	436.50	21.0%	528.17
+Amazon S3 Standard Storage (12.4 TB/mes)	2	285.20	570.40	21.0%	690.18
+Vercel Pro Enterprise Team Subscription	2	40.00	80.00	21.0%	96.80
+
+Subtotal	1086.90
+Cuota IVA (21%)	228.25
+Total Factura	1315.15

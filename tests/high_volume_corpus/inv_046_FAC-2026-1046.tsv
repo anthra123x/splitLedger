@@ -1,0 +1,12 @@
+FACTURA	FAC-2026-1046	FECHA	2026-10-19
+PROVEEDOR	Google LLC (US Mountain View)	NIF	US94275684
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	USD
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Google Cloud BigQuery Compute Engine On-Demand	2	145.50	291.00	21.0%	352.11
+Microsoft Azure Virtual Network Gateway & ExpressRoute	2	210.00	420.00	21.0%	508.20
+
+Subtotal	711.00
+Cuota IVA (21%)	149.31
+Total Factura	860.31

@@ -1,0 +1,11 @@
+FACTURA;FAC-2026-1010;FECHA;2026-10-11
+PROVEEDOR;Iberdrola Clientes S.A.U.;NIF;A95748375
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Alquiler de Equipos de Medida y Control Contador;2;4.20;8.40;21.0%;10.16
+
+Subtotal;8.40
+Cuota IVA (21%);1.76
+Total Factura;10.16

@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1060	FECHA	2026-10-05
+PROVEEDOR	Mantenimiento Técnico Industrial S.L.	NIF	B81928374
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Mantenimiento Preventivo Sistemas de Climatización	1	195.00	195.00	21.0%	235.95
+
+Subtotal	195.00
+Cuota IVA (21%)	40.95
+Total Factura	235.95

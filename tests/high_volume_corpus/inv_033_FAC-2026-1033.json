@@ -1,0 +1,62 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1033",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Google Cloud Ireland Limited",
+    "tax_id": "IE6388047V",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Neon Serverless PostgreSQL Compute Units & Storage",
+      "quantity": 3,
+      "unit_price": 68.0,
+      "taxable_amount": 204.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 42.84,
+      "total_amount": 246.84
+    },
+    {
+      "description": "Google Cloud Kubernetes Engine (GKE Cluster)",
+      "quantity": 3,
+      "unit_price": 95.0,
+      "taxable_amount": 285.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 59.85,
+      "total_amount": 344.85
+    },
+    {
+      "description": "Amazon S3 Standard Storage (12.4 TB/mes)",
+      "quantity": 1,
+      "unit_price": 285.2,
+      "taxable_amount": 285.2,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 59.89,
+      "total_amount": 345.09
+    },
+    {
+      "description": "Google Cloud BigQuery Compute Engine On-Demand",
+      "quantity": 3,
+      "unit_price": 145.5,
+      "taxable_amount": 436.5,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 91.67,
+      "total_amount": 528.16
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 1210.7,
+    "tax_total_amount": 254.25,
+    "retention_amount": 0.0,
+    "grand_total_amount": 1464.95
+  }
+}

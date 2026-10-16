@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1098
+Fecha de Emisión: 2026-10-15 | Vencimiento: 2026-11-15
+Proveedor: Microsoft Ireland Operations Ltd | NIF: IE8256796U
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Neon Serverless PostgreSQL Compute Units & Storage | Cantidad: 2 x 68.00 | Base: 136.00 | IVA: 28.56 | Total: 164.56 EUR
+- Google Cloud BigQuery Compute Engine On-Demand | Cantidad: 3 x 145.50 | Base: 436.50 | IVA: 91.67 | Total: 528.17 EUR
+
+Subtotal (Base Imponible): 572.50 EUR
+Cuota IVA (21%): 120.22 EUR
+Total Factura: 692.72 EUR

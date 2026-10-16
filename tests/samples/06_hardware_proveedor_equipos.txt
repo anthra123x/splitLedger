@@ -1,0 +1,27 @@
+PC Componentes y Soluciones Servidores S.L.
+Parque Tecnológico Atalayas, Buzón 45, 30110 Murcia
+CIF: B73891024
+
+FACTURA DE COMPRA DE MATERIAL Y HARDWARE
+Número de Factura: FAC-HW-2024-771
+Fecha: 2024-10-15
+Vencimiento: 2024-11-15
+
+CLIENTE:
+SplitLedger Engineering Labs S.L.
+Calle Velázquez 45, 28001 Madrid
+NIF: B87219034
+
+PARTIDAS:
+Cód.  Descripción del Producto               Cant.  Precio Unitario  Importe Base
+---------------------------------------------------------------------------------
+HD01  Unidad Disco SSD NVMe Samsung 2TB Pro     4          185.00 €      740.00 €
+MN02  Monitor Dell UltraSharp 27" 4K IPS        2          340.00 €      680.00 €
+SW03  Switch Gigabit Administrable Cisco 24P    1          280.00 €      280.00 €
+---------------------------------------------------------------------------------
+Subtotal Base Imponible:                                                1700.00 €
+IVA Régimen General (21%):                                               357.00 €
+Retención IRPF:                                                            0.00 €
+TOTAL FACTURA:                                                          2057.00 €
+
+Condiciones: Entrega asegurada por DHL Express Tracking #9821441029.

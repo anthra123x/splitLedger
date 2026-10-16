@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1066;FECHA;2026-10-11
+PROVEEDOR;Microsoft Ireland Operations Ltd;NIF;IE8256796U
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Neon Serverless PostgreSQL Compute Units & Storage;2;68.00;136.00;21.0%;164.56
+Amazon Elastic Compute Cloud (EC2) c6g.2xlarge;2;185.00;370.00;21.0%;447.70
+Amazon S3 Standard Storage (12.4 TB/mes);3;285.20;855.60;21.0%;1035.28
+
+Subtotal;1361.60
+Cuota IVA (21%);285.94
+Total Factura;1647.54

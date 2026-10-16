@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #131315;
+  --color-surface-dim: #131315;
+  --color-surface-bright: #39393b;
+  --color-surface-container-lowest: #0e0e10;
+  --color-surface-container-low: #1c1b1d;
+  --color-surface-container: #201f22;
+  --color-surface-container-high: #2a2a2c;
+  --color-surface-container-highest: #353437;
+  --color-surface-variant: #353437;
+  --color-surface-tint: #c6c6c7;
+  
+  --color-on-surface: #e5e1e4;
+  --color-on-surface-variant: #c4c7c8;
+  --color-background: #131315;
+  --color-on-background: #e5e1e4;
+  
+  --color-primary: #ffffff;
+  --color-on-primary: #2f3131;
+  --color-primary-container: #e2e2e2;
+  --color-on-primary-container: #636565;
+  
+  --color-secondary: #c6c6cf;
+  --color-on-secondary: #2f3037;
+  --color-secondary-container: #45464e;
+  --color-on-secondary-container: #b4b4bd;
+  
+  --color-tertiary: #ffffff;
+  --color-on-tertiary: #303033;
+  --color-tertiary-container: #e4e1e5;
+  --color-on-tertiary-container: #656467;
+  
+  --color-outline: #8e9192;
+  --color-outline-variant: #444748;
+  
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  :root {
+    --ease-snappy: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+    --ease-in-out-smooth: cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #131315;
+    color: #e5e1e4;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #131315;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2c;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #444748;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Fluid Page / View Entrance */
+@keyframes page-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.996);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 220ms var(--ease-snappy) both;
+}
+
+/* Modal & Popover Pop-In */
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 180ms var(--ease-snappy) both;
+}
+
+/* Smooth Fade In */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 180ms ease-out both;
+}
+
+/* Button & Interactive Tactility */
+button, a, [role="button"] {
+  transition: transform 140ms var(--ease-snappy), background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+button:active:not(:disabled), a:active:not(:disabled), [role="button"]:active:not(:disabled) {
+  transform: scale(0.975);
+}
+
+/* Smooth row lift */
+.hover-lift {
+  transition: transform 180ms var(--ease-snappy), background-color 150ms ease, border-color 150ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+}
+
+/* Enhanced Laser Scanning Beam */
+@keyframes scan-laser {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scan-laser {
+  animation: scan-laser 2.2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+/* Breathing ambient glow */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.8s ease-in-out infinite;
+}
+
+

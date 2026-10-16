@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1094;FECHA;2026-10-11
+PROVEEDOR;Google LLC (US Mountain View);NIF;US94275684
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;USD
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Amazon S3 Standard Storage (12.4 TB/mes);1;285.20;285.20;21.0%;345.09
+Microsoft Azure Virtual Network Gateway & ExpressRoute;2;210.00;420.00;21.0%;508.20
+Vercel Pro Enterprise Team Subscription;3;40.00;120.00;21.0%;145.20
+
+Subtotal;825.20
+Cuota IVA (21%);173.29
+Total Factura;998.49

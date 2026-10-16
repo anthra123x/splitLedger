@@ -1,0 +1,12 @@
+FACTURA;FAC-2026-1129;FECHA;2026-10-18
+PROVEEDOR;Google Cloud Ireland Limited;NIF;IE6388047V
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Google Cloud BigQuery Compute Engine On-Demand;2;145.50;291.00;21.0%;352.11
+Microsoft Azure Virtual Network Gateway & ExpressRoute;3;210.00;630.00;21.0%;762.30
+
+Subtotal;921.00
+Cuota IVA (21%);193.41
+Total Factura;1114.41

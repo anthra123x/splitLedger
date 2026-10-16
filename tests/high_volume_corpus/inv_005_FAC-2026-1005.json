@@ -1,0 +1,35 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1005",
+    "issue_date": "2026-10-06",
+    "due_date": "2026-11-06",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "SEUR GeoPost S.L.",
+    "tax_id": "B82910341",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Seguro de Mercancía en Tránsito Terrestre",
+      "quantity": 1,
+      "unit_price": 38.0,
+      "taxable_amount": 38.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 7.98,
+      "total_amount": 45.98
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 38.0,
+    "tax_total_amount": 7.98,
+    "retention_amount": 0.0,
+    "grand_total_amount": 45.98
+  }
+}

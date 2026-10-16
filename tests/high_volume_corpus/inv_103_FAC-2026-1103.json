@@ -1,0 +1,44 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1103",
+    "issue_date": "2026-10-20",
+    "due_date": "2026-11-20",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Elena Gómez Martínez",
+    "tax_id": "48920134K",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Revisión Compliance RGPD y Cláusulas Laborales",
+      "quantity": 2,
+      "unit_price": 300.0,
+      "taxable_amount": 600.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 126.0,
+      "total_amount": 726.0
+    },
+    {
+      "description": "Honorarios Asesoría Jurídica Mercantil Contratos",
+      "quantity": 1,
+      "unit_price": 450.0,
+      "taxable_amount": 450.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 94.5,
+      "total_amount": 544.5
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 1050.0,
+    "tax_total_amount": 220.5,
+    "retention_amount": 157.5,
+    "grand_total_amount": 1113.0
+  }
+}

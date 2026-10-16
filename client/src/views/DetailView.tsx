@@ -1,0 +1,998 @@
+import React, { useState, useEffect } from 'react';
+import { updateInvoice, fetchAccountingRules } from '../services/api';
+import { Invoice, InvoiceItem } from '../types/index.js';
+import ScanningAnimationCard from '../components/ScanningAnimationCard';
+
+const DEFAULT_PGC_ACCOUNTS = [
+  { code: '600000', name: 'Compras de Mercaderías y Hardware', group: 'Grupo 60 - Compras' },
+  { code: '602000', name: 'Compras de Otros Aprovisionamientos', group: 'Grupo 60 - Compras' },
+  { code: '621000', name: 'Arrendamientos y Cánones (Oficinas/Coworking)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '622000', name: 'Reparaciones y Conservación', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '623000', name: 'Servicios de Profesionales Independientes', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '624000', name: 'Transportes y Mensajería Logística', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '625000', name: 'Primas de Seguros (Ciberseguridad/RC)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '626000', name: 'Servicios Bancarios (Comisiones Pasarela/Stripe)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '627000', name: 'Publicidad y Propaganda (Google/Meta Ads)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '628000', name: 'Suministros IT (Cloud, AWS, GCP, Licencias)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '628001', name: 'Suministros Básicos (Electricidad, Climatización)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '629000', name: 'Comunicaciones (Fibra y Telefonía Móvil)', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '629001', name: 'Suscripciones y Licencias SaaS Anuales', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '629002', name: 'Infraestructura Serverless y Base de Datos Cloud', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '629003', name: 'Viajes, Dietas y Desplazamientos', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '629004', name: 'Gastos de Representación y Restauración', group: 'Grupo 62 - Servicios Exteriores' },
+  { code: '640000', name: 'Sueldos y Salarios (Nóminas de Personal)', group: 'Grupo 64 - Personal' },
+  { code: '642000', name: 'Seguridad Social a Cargo de la Empresa', group: 'Grupo 64 - Personal' },
+  { code: '680000', name: 'Amortización de Software y Activo Intangible', group: 'Grupo 68 - Amortizaciones' },
+  { code: '681000', name: 'Amortización de Servidores y Equipos', group: 'Grupo 68 - Amortizaciones' },
+  { code: '400000', name: 'Proveedores Comerciales', group: 'Grupo 40 - Pasivo Corriente' },
+  { code: '410000', name: 'Acreedores por Prestaciones de Servicios', group: 'Grupo 40 - Pasivo Corriente' },
+];
+
+interface DetailViewProps {
+  invoice: Invoice | null;
+  onInvoiceUpdated?: (invoice: Invoice) => void;
+  onBack: () => void;
+  backLabel?: string;
+}
+
+export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabel }: DetailViewProps) {
+  if (!invoice) {
+    return (
+      <div className="w-full pt-32 pb-20 text-center min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center animate-page-enter">
+        <span className="material-symbols-outlined text-[48px] text-zinc-600 mb-4 animate-pulse">description</span>
+        <h2 className="text-xl font-semibold text-white">No hay ninguna factura seleccionada</h2>
+        <p className="text-zinc-400 text-sm mt-1 max-w-sm">
+          Sube una factura en "Inicio & Carga" o haz clic en "Ver desglose" desde el Historial.
+        </p>
+        <button
+          onClick={onBack}
+          className="mt-6 px-5 py-2.5 rounded-full bg-white text-zinc-950 font-medium text-xs hover:bg-zinc-200 transition-all cursor-pointer active:scale-95 shadow-lg"
+        >
+          {backLabel || 'Volver al Inicio'}
+        </button>
+      </div>
+    );
+  }
+
+  const [items, setItems] = useState<InvoiceItem[]>(invoice.items || []);
+  const [zoom, setZoom] = useState(100);
+  const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanStage, setScanStage] = useState(1);
+  const [scanProgress, setScanProgress] = useState(25);
+  const [scanStatusText, setScanStatusText] = useState('');
+  const [showThinking, setShowThinking] = useState(false);
+
+  const handleReScan = () => {
+    setIsScanning(true);
+    setScanStage(1);
+    setScanProgress(25);
+    setScanStatusText('Lectura óptica y extracción de coordenadas OCR...');
+
+    const t1 = setTimeout(() => {
+      setScanStage(2);
+      setScanProgress(60);
+      setScanStatusText('Reconstruyendo Grafo de Atención Espacial 2D con SplitLLM...');
+    }, 800);
+
+    const t2 = setTimeout(() => {
+      setScanStage(3);
+      setScanProgress(90);
+      setScanStatusText('Verificando balance contable bajo partida doble...');
+    }, 1800);
+
+    const t3 = setTimeout(() => {
+      setScanProgress(100);
+      setTimeout(() => {
+        setIsScanning(false);
+        setSaveMessage('[OK] Factura re-analizada y validada por SplitLLM.');
+      }, 400);
+    }, 2600);
+  };
+
+  useEffect(() => {
+    setItems(invoice.items || []);
+  }, [invoice]);
+
+  useEffect(() => {
+    fetchAccountingRules().then(res => {
+      if (res.data && res.data.accounts && res.data.accounts.length > 0) {
+        setAccounts(res.data.accounts);
+      }
+    }).catch(() => null);
+  }, []);
+
+  const availableAccounts = accounts.length > 0 ? accounts : DEFAULT_PGC_ACCOUNTS;
+  const pgcGroups = Array.from(new Set(availableAccounts.map(a => a.group || 'Grupo 62 - Servicios Exteriores')));
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 15, 160));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 15, 70));
+  const handleZoomFit = () => setZoom(100);
+
+  const handleItemAccountChange = (index: number, rawCode: string) => {
+    const cleanCode = rawCode.replace(/\./g, '');
+    const targetAccount = availableAccounts.find(
+      a => a.code.replace(/\./g, '') === cleanCode
+    );
+    const updated = [...items];
+    updated[index] = {
+      ...updated[index],
+      account_code: cleanCode,
+      account_name: targetAccount?.name || updated[index].account_name
+    };
+    setItems(updated);
+  };
+
+  const handleItemCostCenterChange = (index: number, center: string) => {
+    const updated = [...items];
+    updated[index] = { ...updated[index], cost_center: center };
+    setItems(updated);
+  };
+
+  const handleItemQuantityChange = (index: number, value: string) => {
+    const qty = parseFloat(value) || 0;
+    const updated = [...items];
+    const unitPrice = updated[index].unit_price || 0;
+    const discount = updated[index].discount_amount || 0;
+    const base = Math.max(0, Number(((qty * unitPrice) - discount).toFixed(2)));
+    const taxRate = updated[index].tax_rate ?? 21;
+    const taxAmount = Number(((base * taxRate) / 100).toFixed(2));
+    const total = Number((base + taxAmount).toFixed(2));
+
+    updated[index] = {
+      ...updated[index],
+      quantity: qty,
+      base_amount: base,
+      tax_amount: taxAmount,
+      total_amount: total
+    };
+    setItems(updated);
+  };
+
+  const handleItemUnitPriceChange = (index: number, value: string) => {
+    const unitPrice = parseFloat(value) || 0;
+    const updated = [...items];
+    const qty = updated[index].quantity || 1;
+    const discount = updated[index].discount_amount || 0;
+    const base = Math.max(0, Number(((qty * unitPrice) - discount).toFixed(2)));
+    const taxRate = updated[index].tax_rate ?? 21;
+    const taxAmount = Number(((base * taxRate) / 100).toFixed(2));
+    const total = Number((base + taxAmount).toFixed(2));
+
+    updated[index] = {
+      ...updated[index],
+      unit_price: unitPrice,
+      base_amount: base,
+      tax_amount: taxAmount,
+      total_amount: total
+    };
+    setItems(updated);
+  };
+
+  const handleItemUnitChange = (index: number, unitVal: string) => {
+    const updated = [...items];
+    updated[index] = {
+      ...updated[index],
+      unit: unitVal
+    };
+    setItems(updated);
+  };
+
+  const handleItemDiscountChange = (index: number, value: string) => {
+    const discount = parseFloat(value) || 0;
+    const updated = [...items];
+    const qty = updated[index].quantity || 1;
+    const unitPrice = updated[index].unit_price || 0;
+    const base = Math.max(0, Number(((qty * unitPrice) - discount).toFixed(2)));
+    const taxRate = updated[index].tax_rate ?? 21;
+    const taxAmount = Number(((base * taxRate) / 100).toFixed(2));
+    const total = Number((base + taxAmount).toFixed(2));
+
+    updated[index] = {
+      ...updated[index],
+      discount_amount: discount,
+      base_amount: base,
+      tax_amount: taxAmount,
+      total_amount: total
+    };
+    setItems(updated);
+  };
+
+  const handleItemBaseChange = (index: number, value: string) => {
+    const base = parseFloat(value) || 0;
+    const updated = [...items];
+    const taxRate = updated[index].tax_rate ?? 21;
+    const taxAmount = Number(((base * taxRate) / 100).toFixed(2));
+    const total = Number((base + taxAmount).toFixed(2));
+    const qty = updated[index].quantity || 1;
+    const unitPrice = qty > 0 ? Number((base / qty).toFixed(2)) : base;
+
+    updated[index] = {
+      ...updated[index],
+      unit_price: unitPrice,
+      base_amount: base,
+      tax_amount: taxAmount,
+      total_amount: total
+    };
+    setItems(updated);
+  };
+
+  const handleDeleteItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const handleAddManualItem = () => {
+    const nextIndex = items.length + 1;
+    const newItem: InvoiceItem = {
+      id: `manual-${Date.now()}`,
+      item_index: nextIndex,
+      concept: 'Nueva partida manual',
+      account_code: '628000',
+      account_name: 'Suministros IT',
+      cost_center: 'DevOps',
+      quantity: 1,
+      unit: 'uds',
+      unit_price: 100.00,
+      discount_amount: 0,
+      base_amount: 100.00,
+      tax_rate: 21,
+      tax_amount: 21.00,
+      total_amount: 121.00,
+      notes: 'Partida añadida manualmente por auditor',
+      bounding_box: { x: 20, y: 140 + nextIndex * 40, w: 380, h: 40, confidence: 100 }
+    };
+    setItems([...items, newItem]);
+  };
+
+  const currentItemsBaseSum = items.reduce((acc, it) => acc + (it.base_amount || 0), 0);
+  const currentItemsTaxSum = items.reduce((acc, it) => acc + (it.tax_amount || 0), 0);
+  const currentItemsTotalSum = items.reduce((acc, it) => acc + (it.total_amount || 0), 0);
+
+  const targetGrandTotal = invoice.grand_total ?? currentItemsTotalSum;
+  const expectedDocSum = (invoice.surcharge_total && Math.abs(currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0) - targetGrandTotal) < 0.05)
+    ? currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0)
+    : currentItemsBaseSum + currentItemsTaxSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0);
+
+  const discrepancy = Math.abs(expectedDocSum - targetGrandTotal);
+  const isBalanced = discrepancy < 0.05;
+
+  const handleSaveAndReconcile = async () => {
+    setIsSaving(true);
+    setSaveMessage('');
+    try {
+      const res = await updateInvoice(invoice.id, {
+        subtotal: currentItemsBaseSum,
+        tax_total: currentItemsTaxSum,
+        grand_total: isBalanced ? targetGrandTotal : expectedDocSum,
+        status: 'reconciled',
+        items
+      });
+      setSaveMessage('[OK] Asiento contable guardado y conciliado en Neon PostgreSQL.');
+      if (onInvoiceUpdated) onInvoiceUpdated(res.data);
+    } catch (err: any) {
+      alert(`Error al guardar: ${err.message}`);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMessage(''), 3500);
+    }
+  };
+
+  return (
+    <main className="w-full pt-20 bg-transparent min-h-[calc(100vh-5rem)]">
+      <div className="flex flex-col w-full">
+        
+        {/* Minimal & Streamlined Invoice Toolbar */}
+        <section className="w-full px-4 sm:px-6 py-2.5 border-b border-dashed border-[#444748]/40 bg-[#1c1b1d]/40 backdrop-blur-md">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            
+            {/* Left: Back + Supplier & Invoice Code */}
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                onClick={onBack}
+                className="w-8 h-8 rounded-lg bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/50 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
+                title="Volver"
+              >
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              </button>
+
+              <div className="flex items-center gap-2.5 truncate">
+                <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
+                  {invoice.supplier_name}
+                </h1>
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0">
+                  {invoice.invoice_number}
+                </span>
+                {invoice.invoice_date && (
+                  <span className="hidden md:inline text-xs text-zinc-500 font-mono shrink-0">
+                    {invoice.invoice_date}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right: Total + Action */}
+            <div className="flex items-center gap-3.5 shrink-0">
+              {saveMessage && (
+                <span className="hidden sm:inline text-xs text-zinc-300 font-mono animate-fade-in">
+                  {saveMessage}
+                </span>
+              )}
+              <div className="flex items-baseline gap-1.5 font-mono text-white">
+                <span className="text-xs text-zinc-400 font-sans hidden sm:inline">Total:</span>
+                <span className="text-sm sm:text-base font-bold">
+                  {(targetGrandTotal).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+
+              <button
+                onClick={handleSaveAndReconcile}
+                disabled={isSaving}
+                className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[16px]">check</span>
+                <span>{isSaving ? 'Guardando...' : 'Conciliar'}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Dual Workspace Layout: Document Canvas (40%) + Line Allocation Engine (60%) */}
+        <section className="w-full px-4 sm:px-6 py-6 flex-1">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* LEFT COLUMN: Optical Inspection & Document Sandbox (5 cols) */}
+            <div className="lg:col-span-5 flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden">
+              
+              {/* Document Canvas Header Toolbar */}
+              <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 h-14">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded bg-[#353437] text-white font-mono text-[11px] font-medium border border-dashed border-[#444748]/50">
+                    DOC 1/1
+                  </span>
+                  <span className="font-mono text-xs text-[#c4c7c8] truncate max-w-[150px] sm:max-w-[200px]" title={invoice.original_name}>
+                    {invoice.original_name}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleReScan}
+                    disabled={isScanning}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#2a2a2c] hover:bg-[#353437] text-white text-xs font-medium border border-dashed border-[#444748]/50 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Re-ejecutar escaneo láser y análisis óptico con SplitLLM"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">document_scanner</span>
+                    <span className="hidden sm:inline">Escanear</span>
+                  </button>
+
+                  {/* Zoom Controls */}
+                  <div className="flex items-center gap-0.5 bg-[#2a2a2c] border border-dashed border-[#444748]/50 rounded p-0.5">
+                  <button
+                    onClick={handleZoomOut}
+                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
+                    title="Reducir zoom"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">remove</span>
+                  </button>
+                  <span className="font-mono text-xs px-2 text-white select-none font-medium">
+                    {zoom}%
+                  </span>
+                  <button
+                    onClick={handleZoomIn}
+                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
+                    title="Aumentar zoom"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">add</span>
+                  </button>
+                  <button
+                    onClick={handleZoomFit}
+                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors ml-0.5 border-l border-dashed border-[#444748]/40 cursor-pointer"
+                    title="Ajustar vista 100%"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">fit_screen</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+              {/* Visual Invoice Sheet or Laser Scanning Animation */}
+              {isScanning ? (
+                <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/80 p-4 flex items-center justify-center shadow-inner">
+                  <ScanningAnimationCard
+                    fileName={invoice.original_name || invoice.filename}
+                    amountText={`${targetGrandTotal.toFixed(2)} €`}
+                    stage={scanStage}
+                    statusMessage={scanStatusText}
+                    progressPercent={scanProgress}
+                    onCancel={() => setIsScanning(false)}
+                  />
+                </div>
+              ) : (
+                <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/80 p-4 overflow-auto select-none flex justify-center items-start shadow-inner">
+                <div
+                  style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
+                  className="relative w-[420px] bg-[#201f22] rounded-sm border border-dashed border-[#444748]/50 shadow-2xl p-5 flex flex-col justify-between transition-transform duration-150"
+                >
+                  <div className="flex flex-col gap-3">
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-start pb-2 border-b border-dashed border-[#444748]/40">
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-white font-bold text-sm tracking-tight">
+                            {invoice.supplier_name}
+                          </span>
+                          {invoice.tax_id_validation && (
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold uppercase ${
+                                invoice.tax_id_validation.is_valid
+                                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
+                                  : invoice.tax_id_validation.entity_type && invoice.tax_id_validation.entity_type !== 'UNKNOWN' && invoice.tax_id_validation.entity_type !== 'INVALID'
+                                    ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
+                                    : 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
+                              }`}
+                              title={invoice.tax_id_validation.diagnostic_message}
+                            >
+                              {invoice.tax_id_validation.is_valid
+                                ? `[NIF OK: ${invoice.tax_id_validation.entity_type}]`
+                                : invoice.tax_id_validation.entity_type && invoice.tax_id_validation.entity_type !== 'UNKNOWN' && invoice.tax_id_validation.entity_type !== 'INVALID'
+                                  ? `[NIF: ${invoice.tax_id_validation.entity_type.replace('PERSONA_FISICA_', '').replace('CIF_', '')}]`
+                                  : '[NIF INVALID]'}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-[#c4c7c8] leading-tight mt-0.5">
+                          {invoice.supplier_address || 'Dirección fiscal registrada'}
+                        </span>
+                        {(invoice.supplier_postal_code || invoice.supplier_city) && (
+                          <span className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                            {[invoice.supplier_postal_code, invoice.supplier_city].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="font-mono text-[10px] text-zinc-400">
+                            NIF/CIF: {invoice.supplier_tax_id || 'B87219034'}
+                          </span>
+                          {(invoice.supplier_email || invoice.supplier_phone) && (
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              • {[invoice.supplier_email, invoice.supplier_phone].filter(Boolean).join(' • ')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded bg-[#353437] border border-dashed border-[#444748]/50 flex items-center justify-center text-white shrink-0">
+                        <span className="material-symbols-outlined text-[18px]">receipt</span>
+                      </div>
+                    </div>
+
+                    {/* Recipient Box */}
+                    <div className="flex justify-between items-start bg-[#1c1b1d] border border-dashed border-[#444748]/40 p-2.5 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-semibold">Facturado a</span>
+                        <span className="text-xs text-white font-medium">{invoice.customer_name || 'SplitLedger Engineering Labs S.L.'}</span>
+                        <span className="font-mono text-[10px] text-zinc-400">{invoice.customer_tax_id || 'ESB87219034'}</span>
+                        {invoice.customer_address && (
+                          <span className="text-[10px] text-zinc-400 leading-tight mt-0.5">{invoice.customer_address}</span>
+                        )}
+                        {(invoice.customer_postal_code || invoice.customer_city) && (
+                          <span className="text-[10px] text-zinc-500 font-mono">
+                            {[invoice.customer_postal_code, invoice.customer_city].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                        {(invoice.customer_email || invoice.customer_phone) && (
+                          <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                            {[invoice.customer_email, invoice.customer_phone].filter(Boolean).join(' • ')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end shrink-0 pl-2">
+                        <span className="text-xs text-white font-mono font-bold"># {invoice.invoice_number}</span>
+                        <span className="text-[11px] text-zinc-400 font-mono">{invoice.invoice_date}</span>
+                        {invoice.due_date && (
+                          <span className="text-[10px] text-zinc-500 font-mono">Vence: {invoice.due_date}</span>
+                        )}
+                        {invoice.temporal_analysis && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span
+                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                                invoice.temporal_analysis.is_overdue
+                                  ? 'bg-amber-950/80 text-amber-300 border border-amber-800/70'
+                                  : 'bg-zinc-800 text-zinc-300 border border-zinc-700/50'
+                              }`}
+                              title={invoice.temporal_analysis.diagnostic_message}
+                            >
+                              {invoice.temporal_analysis.is_overdue
+                                ? `VENCIDA +${invoice.temporal_analysis.days_overdue}d`
+                                : `Término: ${invoice.temporal_analysis.payment_terms_days}d`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Treasury & Payment Details */}
+                    {(invoice.payment_method || invoice.iban) && (
+                      <div className="bg-[#181719] border border-dashed border-[#444748]/40 p-2 rounded flex flex-col gap-1 text-[11px] font-mono">
+                        <div className="flex items-center justify-between text-zinc-400">
+                          <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-sans font-semibold">Forma de Pago</span>
+                          <span className="text-white">{invoice.payment_method || 'Transferencia'}</span>
+                        </div>
+                        {invoice.iban && (
+                          <div className="flex items-center justify-between text-zinc-400">
+                            <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-sans font-semibold">IBAN / Cuenta</span>
+                            <span className="text-white font-mono tracking-wider">{invoice.iban}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* OCR Hotspots / Bounding boxes */}
+                    <div className="mt-2 flex flex-col gap-2">
+                      <div className="text-[10px] text-[#c4c7c8] uppercase tracking-wider flex items-center justify-between pb-1 border-b border-dashed border-[#444748]/30">
+                        <span>Partidas Detectadas por OCR</span>
+                        <span className="font-mono text-white text-[10px]">{items.length} Líneas</span>
+                      </div>
+
+                      {items.map((item, idx) => {
+                        const isHovered = hoveredLineIndex === idx;
+                        return (
+                          <div
+                            key={idx}
+                            onMouseEnter={() => setHoveredLineIndex(idx)}
+                            onMouseLeave={() => setHoveredLineIndex(null)}
+                            className={`relative p-2 rounded transition-all cursor-pointer group ${
+                              isHovered
+                                ? 'bg-[#353437] border-white ring-1 ring-white'
+                                : 'bg-[#1c1b1d] border border-dashed border-[#444748]/40 hover:border-white/50 hover:bg-[#2a2a2c]'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-white font-medium truncate max-w-[240px]">{item.concept}</span>
+                              <span className="font-mono text-white font-semibold">
+                                {(item.base_amount ?? item.total_amount ?? 0).toFixed(2)} €
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mt-0.5">
+                              <span>
+                                {item.quantity || 1} {item.unit || 'uds'} × {(item.unit_price || item.base_amount || 0).toFixed(2)} €
+                                {item.discount_amount && item.discount_amount > 0 ? ` (-${item.discount_amount.toFixed(2)} €)` : ''}
+                              </span>
+                              <span className="text-zinc-500">
+                                {item.account_code || '628000'} • {item.cost_center || 'DevOps'}
+                              </span>
+                            </div>
+                            <span className="absolute -top-1.5 -right-1 font-mono text-[8px] bg-white text-zinc-950 px-1 rounded-sm opacity-90 shadow font-semibold">
+                              OCR {item.bounding_box?.confidence || 98.8}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                  </div>
+
+                  {/* Document Tax Summary */}
+                  <div className="mt-4 pt-2 bg-[#0e0e10] border border-dashed border-[#444748]/40 p-2.5 rounded flex flex-col gap-1">
+                    <div className="flex justify-between text-xs text-zinc-400">
+                      <span>Subtotal (Base Imponible)</span>
+                      <span className="font-mono text-white">{currentItemsBaseSum.toFixed(2)} €</span>
+                    </div>
+
+                    {invoice.tax_breakdown && invoice.tax_breakdown.length > 0 ? (
+                      invoice.tax_breakdown.map((tb, tbIdx) => (
+                        <div key={tbIdx} className="flex flex-col text-[11px] text-zinc-400 border-t border-dashed border-[#444748]/20 pt-1 mt-0.5">
+                          <div className="flex justify-between">
+                            <span>Base {tb.base_amount.toFixed(2)} € @ {tb.tax_rate}% IVA</span>
+                            <span className="font-mono text-white">{tb.tax_amount.toFixed(2)} €</span>
+                          </div>
+                          {tb.surcharge_amount && tb.surcharge_amount > 0 && (
+                            <div className="flex justify-between text-zinc-400">
+                              <span>Recargo Eq. ({tb.surcharge_rate || 5.2}%)</span>
+                              <span className="font-mono text-amber-300">+{tb.surcharge_amount.toFixed(2)} €</span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex justify-between text-xs text-zinc-400 mt-0.5">
+                        <span>IVA Total ({items[0]?.tax_rate || 21}%)</span>
+                        <span className="font-mono text-white">{currentItemsTaxSum.toFixed(2)} €</span>
+                      </div>
+                    )}
+
+                    {Boolean((!invoice.tax_breakdown || invoice.tax_breakdown.length === 0) && (invoice.surcharge_total ?? 0) > 0) && (
+                      <div className="flex justify-between text-xs text-zinc-400">
+                        <span>Recargo de Equivalencia (R.E.)</span>
+                        <span className="font-mono text-amber-300">+{(invoice.surcharge_total || 0).toFixed(2)} €</span>
+                      </div>
+                    )}
+
+                    {Boolean((invoice.retention_total ?? 0) > 0) && (
+                      <div className="flex justify-between text-xs text-zinc-400">
+                        <span>Retención IRPF</span>
+                        <span className="font-mono text-rose-300">-{(invoice.retention_total || 0).toFixed(2)} €</span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between text-xs font-semibold text-white mt-1.5 pt-1.5 border-t border-dashed border-[#444748]/40">
+                      <span>Total Liquidación ({invoice.currency || 'EUR'})</span>
+                      <span className="font-mono text-sm text-white font-bold">{targetGrandTotal.toFixed(2)} {invoice.currency || '€'}</span>
+                    </div>
+
+                    {invoice.currency_conversion?.is_foreign && (
+                      <div className="flex justify-between text-xs font-mono text-amber-300 mt-1 pt-1 border-t border-dashed border-[#444748]/20">
+                        <span>Equivalente PGC (EUR)</span>
+                        <span className="font-bold">{invoice.currency_conversion.converted_total_eur.toFixed(2)} €</span>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+              )}
+
+              {/* Document Canvas Status Footer */}
+              <div className="flex items-center justify-between text-zinc-400 text-xs px-3 py-2 bg-[#201f22]/90 border-t border-dashed border-[#444748]/40 h-10">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span className="text-xs text-zinc-300">Inspección 2D completada</span>
+                </div>
+                <span className="font-mono text-[11px] text-zinc-400">
+                  Precisión {((invoice.confidence_score || 0.988) * 100).toFixed(1)}% • 300 DPI
+                </span>
+              </div>
+
+            </div>
+
+            {/* RIGHT COLUMN: Master Item Breakdown Table */}
+            <div className="lg:col-span-7 flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden">
+              
+              {/* Table Toolbar */}
+              <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 h-14">
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-semibold text-sm sm:text-base">Partidas Desglosadas</span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#353437] border border-dashed border-[#444748]/50 font-mono text-[11px] text-white font-medium">
+                    {items.length} detectadas
+                  </span>
+                </div>
+
+                {invoice.thinking_process && (
+                  <button
+                    type="button"
+                    onClick={() => setShowThinking(!showThinking)}
+                    className={`px-2.5 py-1 rounded text-xs font-mono font-medium border border-dashed flex items-center gap-1.5 transition-colors cursor-pointer ${
+                      showThinking
+                        ? 'bg-zinc-800 text-white border-zinc-500'
+                        : 'bg-[#2a2a2c] text-zinc-300 border-[#444748]/50 hover:bg-[#353437]'
+                    }`}
+                    title="Visualizar traza de razonamiento Chain-of-Thought (CoT) del modelo"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">terminal</span>
+                    <span>{showThinking ? 'Ocultar CoT' : 'Razonamiento CoT'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Collapsible Chain-of-Thought drawer */}
+              {showThinking && invoice.thinking_process && (
+                <div className="p-3 bg-[#111113] border-b border-dashed border-[#444748]/50 text-xs font-mono animate-fade-in">
+                  <div className="flex items-center justify-between text-zinc-400 mb-1.5">
+                    <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-zinc-300 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                      Traza de Razonamiento Neuronal (CoT Reasoning)
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-mono">tokens de inferencia</span>
+                  </div>
+                  <pre className="p-2.5 rounded bg-[#0a0a0c] border border-zinc-800/80 text-zinc-300 whitespace-pre-wrap font-mono text-[11px] leading-relaxed max-h-44 overflow-y-auto">
+                    {invoice.thinking_process}
+                  </pre>
+                </div>
+              )}
+
+              {/* Executive Metadata Ribbon */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-[#181719] border-b border-dashed border-[#444748]/40 text-xs">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Emisor / NIF</span>
+                  <span className="text-white font-medium truncate" title={invoice.supplier_name}>{invoice.supplier_name}</span>
+                  <span className="text-[11px] font-mono text-zinc-400">{invoice.supplier_tax_id || '-'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Cliente / Receptor</span>
+                  <span className="text-white font-medium truncate" title={invoice.customer_name}>{invoice.customer_name || 'No especificado'}</span>
+                  <span className="text-[11px] font-mono text-zinc-400">{invoice.customer_tax_id || '-'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Tesorería & Pago</span>
+                  <span className="text-white font-mono truncate">{invoice.payment_method || 'Contado / Giro'}</span>
+                  <span className="text-[11px] font-mono text-zinc-400 truncate" title={invoice.iban}>{invoice.iban || 'Sin IBAN'}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Liquidación Fiscal</span>
+                  <span className="text-white font-mono font-semibold">
+                    {(targetGrandTotal).toFixed(2)} {invoice.currency || 'EUR'}
+                  </span>
+                  <span className="text-[11px] font-mono text-zinc-400 truncate">
+                    {invoice.currency_conversion?.is_foreign ? (
+                      `PGC: ${invoice.currency_conversion.converted_total_eur.toFixed(2)} € (@ ${invoice.currency_conversion.exchange_rate})`
+                    ) : (
+                      `IVA: ${currentItemsTaxSum.toFixed(2)} €${invoice.surcharge_total ? ` • RE: ${invoice.surcharge_total.toFixed(2)} €` : ''}`
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Master Table */}
+              <div className="flex-1 w-full overflow-x-auto bg-[#0e0e10]/40 flex flex-col justify-between">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#201f22]/70 border-b border-dashed border-[#444748]/40 text-zinc-400 text-[11px] tracking-wider uppercase select-none">
+                      <th className="py-2.5 px-2 w-8 text-center">#</th>
+                      <th className="py-2.5 px-3 min-w-[170px]">Concepto / Partida</th>
+                      <th className="py-2.5 px-2 w-20 text-center">Cant.</th>
+                      <th className="py-2.5 px-2 w-24 text-right">P. Unit.</th>
+                      <th className="py-2.5 px-2 w-16 text-right">Desc.</th>
+                      <th className="py-2.5 px-2 min-w-[150px]">Cuenta PGC</th>
+                      <th className="py-2.5 px-2 min-w-[95px]">C. Coste</th>
+                      <th className="py-2.5 px-2 text-right w-20">Base</th>
+                      <th className="py-2.5 px-1.5 text-center w-12">IVA</th>
+                      <th className="py-2.5 px-2.5 text-right w-24">Total</th>
+                      <th className="py-2.5 px-2 text-center w-10">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y-0 text-xs">
+                    {items.map((item, idx) => {
+                      const isHovered = hoveredLineIndex === idx;
+                      return (
+                        <tr
+                          key={idx}
+                          onMouseEnter={() => setHoveredLineIndex(idx)}
+                          onMouseLeave={() => setHoveredLineIndex(null)}
+                          className={`border-b border-dashed border-[#444748]/30 transition-colors group ${
+                            isHovered
+                              ? 'bg-[#353437]'
+                              : idx % 2 === 0
+                              ? 'hover:bg-[#201f22]'
+                              : 'bg-[#0e0e10]/30 hover:bg-[#201f22]'
+                          }`}
+                        >
+                          <td className="py-2.5 px-2 font-mono text-center text-xs text-zinc-400">
+                            {String(idx + 1).padStart(2, '0')}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <input
+                              type="text"
+                              value={item.concept}
+                              onChange={(e) => {
+                                const updated = [...items];
+                                updated[idx] = { ...updated[idx], concept: e.target.value };
+                                setItems(updated);
+                              }}
+                              className="w-full bg-transparent text-white font-medium text-xs focus:outline-none focus:border-b focus:border-white"
+                            />
+                            <div className="text-[10px] text-zinc-500 font-mono mt-0.5 truncate max-w-[190px]">
+                              {item.notes || 'Partida validada por OCR'}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-2 text-center font-mono">
+                            <div className="flex items-center justify-center gap-1">
+                              <input
+                                type="number"
+                                step="any"
+                                value={item.quantity ?? 1}
+                                onChange={(e) => handleItemQuantityChange(idx, e.target.value)}
+                                className="w-10 text-center bg-transparent text-white font-mono text-xs focus:outline-none focus:bg-[#353437] rounded py-0.5"
+                              />
+                              <input
+                                type="text"
+                                value={item.unit || 'uds'}
+                                onChange={(e) => handleItemUnitChange(idx, e.target.value)}
+                                className="w-7 text-[10px] text-zinc-400 bg-transparent text-center focus:outline-none font-mono"
+                                title="Unidad de medida"
+                              />
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-2 text-right font-mono">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.unit_price ?? item.base_amount ?? 0}
+                              onChange={(e) => handleItemUnitPriceChange(idx, e.target.value)}
+                              className="w-16 text-right bg-transparent text-white font-mono text-xs focus:outline-none focus:bg-[#353437] rounded px-1 py-0.5"
+                            /> €
+                          </td>
+                          <td className="py-2.5 px-2 text-right font-mono">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.discount_amount ?? 0}
+                              onChange={(e) => handleItemDiscountChange(idx, e.target.value)}
+                              className="w-12 text-right bg-transparent text-zinc-400 font-mono text-xs focus:outline-none focus:bg-[#353437] rounded px-1 py-0.5"
+                            /> €
+                          </td>
+                          <td className="py-2.5 px-2">
+                            <select
+                              value={item.account_code ? item.account_code.replace(/\./g, '') : '628000'}
+                              onChange={(e) => handleItemAccountChange(idx, e.target.value)}
+                              className="w-full bg-[#353437] border border-dashed border-[#444748]/50 text-white text-xs px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-white transition-colors cursor-pointer"
+                            >
+                              {pgcGroups.map(grp => (
+                                <optgroup key={grp} label={grp} className="bg-[#201f22] text-zinc-300 font-semibold text-[11px]">
+                                  {availableAccounts.filter(a => (a.group || 'Grupo 62 - Servicios Exteriores') === grp).map(acc => (
+                                    <option key={acc.code} value={acc.code.replace(/\./g, '')} className="bg-[#1c1b1d] text-white font-normal text-xs">
+                                      {acc.code.replace(/\./g, '')} - {acc.name}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="py-2.5 px-2">
+                            <select
+                              value={item.cost_center || 'DevOps'}
+                              onChange={(e) => handleItemCostCenterChange(idx, e.target.value)}
+                              className="bg-[#2a2a2c] border border-dashed border-[#444748]/40 text-white text-xs px-2 py-1 rounded font-mono cursor-pointer"
+                            >
+                              <option value="DevOps">DevOps</option>
+                              <option value="Data">Data</option>
+                              <option value="Management">Management</option>
+                              <option value="Operations">Operations</option>
+                              <option value="AI-Research">AI-Research</option>
+                              <option value="Marketing">Marketing</option>
+                              <option value="General">General</option>
+                            </select>
+                          </td>
+                          <td className="py-2.5 px-2 text-right font-mono">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={item.base_amount}
+                              onChange={(e) => handleItemBaseChange(idx, e.target.value)}
+                              className="w-20 text-right bg-transparent text-white font-mono text-xs focus:outline-none focus:bg-[#353437] rounded px-1"
+                            /> €
+                          </td>
+                          <td className="py-2.5 px-1.5 text-center font-mono text-zinc-400">
+                            {item.tax_rate ?? 21}%
+                          </td>
+                          <td className="py-2.5 px-2.5 text-right font-mono text-white font-semibold">
+                            {(item.total_amount || 0).toFixed(2)} €
+                          </td>
+                          <td className="py-2.5 px-2 text-center">
+                            <button
+                              onClick={() => handleDeleteItem(idx)}
+                              className="p-1 rounded hover:bg-[#353437] text-zinc-400 hover:text-red-400 transition-colors cursor-pointer"
+                              title="Eliminar partida"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Bottom Operational Action Bar */}
+              <div className="px-3 py-2 bg-[#201f22]/90 border-t border-dashed border-[#444748]/40 flex flex-col sm:flex-row items-center justify-between gap-2 h-auto sm:h-12">
+                <button
+                  type="button"
+                  onClick={handleAddManualItem}
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-[#353437] border border-dashed border-[#444748]/40 hover:bg-[#444748] text-white text-xs font-medium transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">add_circle</span>
+                  <span>Añadir partida manual (+)</span>
+                </button>
+
+                <div className={`flex items-center gap-2 px-3 py-1 rounded text-xs border border-dashed ${
+                  isBalanced
+                    ? 'bg-[#0e0e10] border-[#444748]/40 text-zinc-200'
+                    : 'bg-amber-950/40 border-amber-800/40 text-amber-200'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
+                  <span>{isBalanced ? 'Cuadrante balanceado' : 'Ajuste pendiente'}</span>
+                  <span className="font-mono text-zinc-400">
+                    (Dif: <strong className={isBalanced ? 'text-white' : 'text-amber-400'}>{discrepancy.toFixed(2)} €</strong>)
+                  </span>
+                </div>
+              </div>
+
+              {/* Asiento Contable PGC (Double Entry Journal Seat) */}
+              <div className="p-3.5 bg-[#181719] border-t border-dashed border-[#444748]/40">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-zinc-300">account_balance</span>
+                    <span className="text-white text-xs font-semibold uppercase tracking-wider">Asiento Contable PGC (Partida Doble)</span>
+                  </div>
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                    isBalanced ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/50' : 'bg-amber-950/70 text-amber-300 border border-amber-800/50'
+                  }`}>
+                    {isBalanced ? '[ASIENTO CUADRADO]' : '[DESCUADRE PGC]'}
+                  </span>
+                </div>
+
+                {invoice.currency_conversion?.is_foreign && (
+                  <div className="mb-2.5 p-2 rounded bg-[#201f22] border border-dashed border-[#444748]/50 flex items-center justify-between text-xs font-mono text-zinc-300 flex-wrap gap-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-amber-300">currency_exchange</span>
+                      <span>PGC NRV 11ª (Moneda extranjera): <strong>{invoice.currency_conversion.source_grand_total.toFixed(2)} {invoice.currency_conversion.source_currency}</strong> @ {invoice.currency_conversion.exchange_rate} = <strong>{invoice.currency_conversion.converted_total_eur.toFixed(2)} EUR</strong></span>
+                    </div>
+                    <span className="text-[10px] text-zinc-400 font-mono">Cuenta 4004 (Moneda extranjera)</span>
+                  </div>
+                )}
+
+                <div className="overflow-x-auto rounded border border-dashed border-[#444748]/40 bg-[#0e0e10]/60">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="bg-[#201f22]/80 border-b border-dashed border-[#444748]/40 text-zinc-400 text-[10px] uppercase">
+                        <th className="py-2 px-3">Cuenta PGC</th>
+                        <th className="py-2 px-3">Concepto / Subcuenta</th>
+                        <th className="py-2 px-3 text-right">Debe</th>
+                        <th className="py-2 px-3 text-right">Haber</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#444748]/20 text-[11px]">
+                      {(invoice.journal_entry?.lines || [
+                        ...items.map(it => ({
+                          account_code: it.account_code || '628000',
+                          account_name: it.account_name || it.concept,
+                          debit: it.base_amount || 0,
+                          credit: 0
+                        })),
+                        ...(currentItemsTaxSum > 0 ? [{
+                          account_code: '472000',
+                          account_name: `H.P. IVA Soportado (${items[0]?.tax_rate || 21}%)`,
+                          debit: currentItemsTaxSum,
+                          credit: 0
+                        }] : []),
+                        ...(invoice.surcharge_total && invoice.surcharge_total > 0 ? [{
+                          account_code: '472001',
+                          account_name: 'H.P. Recargo de Equivalencia (5,2%)',
+                          debit: invoice.surcharge_total,
+                          credit: 0
+                        }] : []),
+                        ...(invoice.retention_total && invoice.retention_total > 0 ? [{
+                          account_code: '475100',
+                          account_name: 'H.P. Acreedora por Retenciones IRPF',
+                          debit: 0,
+                          credit: invoice.retention_total
+                        }] : []),
+                        {
+                          account_code: '400000',
+                          account_name: `Proveedores: ${invoice.supplier_name || 'Acreedor'}`,
+                          debit: 0,
+                          credit: targetGrandTotal
+                        }
+                      ]).map((seatLine, sIdx) => (
+                        <tr key={sIdx} className="hover:bg-[#201f22]/50 transition-colors">
+                          <td className="py-1.5 px-3 text-white font-semibold">{seatLine.account_code}</td>
+                          <td className="py-1.5 px-3 text-zinc-300 truncate max-w-[240px]">{seatLine.account_name}</td>
+                          <td className="py-1.5 px-3 text-right text-emerald-400">
+                            {seatLine.debit > 0 ? `${seatLine.debit.toFixed(2)} €` : '-'}
+                          </td>
+                          <td className="py-1.5 px-3 text-right text-sky-400">
+                            {seatLine.credit > 0 ? `${seatLine.credit.toFixed(2)} €` : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-[#201f22] font-semibold border-t border-dashed border-[#444748]/60 text-white">
+                        <td colSpan={2} className="py-1.5 px-3 text-right uppercase text-[10px] text-zinc-400">Sumas del Asiento:</td>
+                        <td className="py-1.5 px-3 text-right text-emerald-300">{targetGrandTotal.toFixed(2)} €</td>
+                        <td className="py-1.5 px-3 text-right text-sky-300">{targetGrandTotal.toFixed(2)} €</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+  );
+}

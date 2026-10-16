@@ -1,0 +1,28 @@
+Amazon Web Services EMEA SARL
+38 Avenue John F. Kennedy, L-1855 Luxembourg
+VAT ID: LU26375245
+
+FACTURA / TAX INVOICE
+Número de Factura: AWS-2024-9104
+Fecha de Factura: 2024-10-01
+Fecha de Vencimiento: 2024-10-31
+Moneda: EUR
+
+DATOS DEL CLIENTE:
+SplitLedger Engineering Labs S.L.
+Calle Velázquez 45, 28001 Madrid, España
+NIF: ESB87219034
+
+DETALLE DE CONSUMO Y PARTIDAS:
+Descripción del Servicio                       Cantidad    Precio Unitario    Base Imponible EUR
+-------------------------------------------------------------------------------------------------
+Amazon Elastic Compute Cloud (EC2 Ireland)            1         1450.00 €              1450.00 €
+Amazon Simple Storage Service (S3 Glacier Cold)       1          320.00 €               320.00 €
+AWS CloudFront Global Content Delivery Network        1           85.50 €                85.50 €
+-------------------------------------------------------------------------------------------------
+Base Imponible (Subtotal):                                                             1855.50 €
+IVA / VAT (0% - Inversión del sujeto pasivo art. 84 LIVA):                                0.00 €
+Retención:                                                                                0.00 €
+Importe Total a Pagar:                                                                 1855.50 €
+
+Información Fiscal: Operación intracomunitaria exenta de IVA por inversión del sujeto pasivo (Reverse Charge).

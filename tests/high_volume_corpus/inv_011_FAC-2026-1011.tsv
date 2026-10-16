@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1011	FECHA	2026-10-12
+PROVEEDOR	Restaurante Asador Donostia S.L.	NIF	B84920194
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Menú Ejecutivo Degustación Empresa (4 Comensales)	2	160.00	320.00	10.0%	352.00
+
+Subtotal	320.00
+Cuota IVA (10%)	32.00
+Total Factura	352.00

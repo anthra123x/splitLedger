@@ -1,0 +1,12 @@
+FACTURA: FAC-2026-1091
+Fecha de Emisión: 2026-10-08 | Vencimiento: 2026-11-08
+Proveedor: Restaurante Asador Donostia S.L. | NIF: B84920194
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Servicio de Restauración y Bebidas Reunión Comercial | Cantidad: 1 x 75.00 | Base: 75.00 | IVA: 7.50 | Total: 82.50 EUR
+
+Subtotal (Base Imponible): 75.00 EUR
+Cuota IVA (10%): 7.50 EUR
+Total Factura: 82.50 EUR

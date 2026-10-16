@@ -1,0 +1,12 @@
+FACTURA: FAC-2026-1014
+Fecha de Emisión: 2026-10-15 | Vencimiento: 2026-11-15
+Proveedor: Google LLC (US Mountain View) | NIF: US94275684
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: USD
+
+DESGLOSE DE PARTIDAS:
+- Google Cloud Kubernetes Engine (GKE Cluster) | Cantidad: 1 x 95.00 | Base: 95.00 | IVA: 19.95 | Total: 114.95 USD
+
+Subtotal (Base Imponible): 95.00 USD
+Cuota IVA (21%): 19.95 USD
+Total Factura: 114.95 USD

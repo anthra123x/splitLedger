@@ -1,0 +1,15 @@
+FACTURA: FAC-2026-1147
+Fecha de Emisión: 2026-10-08 | Vencimiento: 2026-11-08
+Proveedor: Telefónica de España S.A.U. | NIF: A28015865
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps | Cantidad: 2 x 115.00 | Base: 230.00 | IVA: 48.30 | Total: 278.30 EUR
+- Servicio Backup 4G LTE Continuidad Negocio | Cantidad: 1 x 25.00 | Base: 25.00 | IVA: 5.25 | Total: 30.25 EUR
+- Troncal SIP Comunicaciones IP Centralita 30 Canales | Cantidad: 1 x 85.00 | Base: 85.00 | IVA: 17.85 | Total: 102.85 EUR
+- Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G | Cantidad: 1 x 35.00 | Base: 35.00 | IVA: 7.35 | Total: 42.35 EUR
+
+Subtotal (Base Imponible): 375.00 EUR
+Cuota IVA (21%): 78.75 EUR
+Total Factura: 453.75 EUR

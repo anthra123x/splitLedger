@@ -1,0 +1,62 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1131",
+    "issue_date": "2026-10-20",
+    "due_date": "2026-11-20",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Telefónica de España S.A.U.",
+    "tax_id": "A28015865",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Línea Móvil Ejecutiva Voz Ilimitada + 50GB Datos 5G",
+      "quantity": 1,
+      "unit_price": 35.0,
+      "taxable_amount": 35.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 7.35,
+      "total_amount": 42.35
+    },
+    {
+      "description": "Troncal SIP Comunicaciones IP Centralita 30 Canales",
+      "quantity": 3,
+      "unit_price": 85.0,
+      "taxable_amount": 255.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 53.55,
+      "total_amount": 308.55
+    },
+    {
+      "description": "Fibra Óptica Simétrica Corporativa 1Gbps / 1Gbps",
+      "quantity": 1,
+      "unit_price": 115.0,
+      "taxable_amount": 115.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 24.15,
+      "total_amount": 139.15
+    },
+    {
+      "description": "Servicio Backup 4G LTE Continuidad Negocio",
+      "quantity": 3,
+      "unit_price": 25.0,
+      "taxable_amount": 75.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 15.75,
+      "total_amount": 90.75
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 480.0,
+    "tax_total_amount": 100.8,
+    "retention_amount": 0.0,
+    "grand_total_amount": 580.8
+  }
+}

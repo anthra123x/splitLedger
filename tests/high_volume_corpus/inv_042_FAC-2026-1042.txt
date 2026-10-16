@@ -1,0 +1,14 @@
+FACTURA: FAC-2026-1042
+Fecha de Emisión: 2026-10-15 | Vencimiento: 2026-11-15
+Proveedor: Iberdrola Clientes S.A.U. | NIF: A95748375
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Consumo Energía Activa Punta y Valle (kWh) | Cantidad: 1 x 312.60 | Base: 312.60 | IVA: 65.65 | Total: 378.25 EUR
+- Término de Potencia Contratada (P1 + P2) | Cantidad: 2 x 85.40 | Base: 170.80 | IVA: 35.87 | Total: 206.67 EUR
+- Alquiler de Equipos de Medida y Control Contador | Cantidad: 3 x 4.20 | Base: 12.60 | IVA: 2.65 | Total: 15.25 EUR
+
+Subtotal (Base Imponible): 496.00 EUR
+Cuota IVA (21%): 104.16 EUR
+Total Factura: 600.16 EUR

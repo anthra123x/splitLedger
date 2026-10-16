@@ -1,0 +1,13 @@
+FACTURA;FAC-2026-1101;FECHA;2026-10-18
+PROVEEDOR;SEUR GeoPost S.L.;NIF;B82910341
+CLIENTE;SplitLedger Labs S.L.;NIF;ESB87219034
+DIVISA;EUR
+
+Concepto;Cantidad;PrecioUnitario;BaseImponible;TipoIVA;TotalPartida
+Transporte Paletizado Carga Pesada Nacional;3;240.00;720.00;21.0%;871.20
+Servicio Courier Express 24h Documentación;1;42.50;42.50;21.0%;51.43
+Seguro de Mercancía en Tránsito Terrestre;3;38.00;114.00;21.0%;137.94
+
+Subtotal;876.50
+Cuota IVA (21%);184.06
+Total Factura;1060.56

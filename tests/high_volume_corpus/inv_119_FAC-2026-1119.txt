@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1119
+Fecha de Emisión: 2026-10-08 | Vencimiento: 2026-11-08
+Proveedor: Elena Gómez Martínez | NIF: 48920134K
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Revisión Compliance RGPD y Cláusulas Laborales | Cantidad: 2 x 300.00 | Base: 600.00 | IVA: 126.00 | Total: 726.00 EUR
+
+Subtotal (Base Imponible): 600.00 EUR
+Cuota IVA (21%): 126.00 EUR
+Retención IRPF (15%): -90.00 EUR
+Total Factura: 636.00 EUR

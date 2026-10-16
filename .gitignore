@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+*/node_modules/
+vendor/
+backend/vendor/
+.venv/
+*/.venv/
+venv/
+
+# Environment and Secrets (Strictly enforced)
+.env
+.env.*
+!.env.example
+*.env
+backend/.env
+backend/.env.*
+!backend/.env.example
+ai_engine/.env
+ai_engine/.env.*
+!ai_engine/.env.example
+*.key
+
+# Build outputs
+dist/
+client/dist/
+build/
+*/build/
+*.egg-info/
+
+# Databases
+*.sqlite
+*.sqlite-journal
+*.db
+*.db-journal
+backend/database/*.sqlite
+backend/database/*.sqlite-journal
+data/*.db
+data/*.sqlite
+
+# Uploads & Storage caches
+uploads/*
+!uploads/.gitkeep
+backend/storage/app/public/uploads/*
+!backend/storage/app/public/uploads/.gitkeep
+backend/storage/framework/cache/*
+!backend/storage/framework/cache/.gitkeep
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitkeep
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitkeep
+backend/storage/logs/*
+!backend/storage/logs/.gitkeep
+
+# Python cache
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Temporary
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

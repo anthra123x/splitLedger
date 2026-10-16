@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1074	FECHA	2026-10-19
+PROVEEDOR	Iberdrola Clientes S.A.U.	NIF	A95748375
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Término de Potencia Contratada (P1 + P2)	3	85.40	256.20	21.0%	310.00
+
+Subtotal	256.20
+Cuota IVA (21%)	53.80
+Total Factura	310.00

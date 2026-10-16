@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1035
+Fecha de Emisión: 2026-10-08 | Vencimiento: 2026-11-08
+Proveedor: Telefónica de España S.A.U. | NIF: A28015865
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Troncal SIP Comunicaciones IP Centralita 30 Canales | Cantidad: 1 x 85.00 | Base: 85.00 | IVA: 17.85 | Total: 102.85 EUR
+- Servicio Backup 4G LTE Continuidad Negocio | Cantidad: 2 x 25.00 | Base: 50.00 | IVA: 10.50 | Total: 60.50 EUR
+
+Subtotal (Base Imponible): 135.00 EUR
+Cuota IVA (21%): 28.35 EUR
+Total Factura: 163.35 EUR

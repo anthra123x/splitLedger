@@ -1,0 +1,35 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1138",
+    "issue_date": "2026-10-27",
+    "due_date": "2026-11-27",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Iberdrola Clientes S.A.U.",
+    "tax_id": "A95748375",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Alquiler de Equipos de Medida y Control Contador",
+      "quantity": 2,
+      "unit_price": 4.2,
+      "taxable_amount": 8.4,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 1.76,
+      "total_amount": 10.16
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 8.4,
+    "tax_total_amount": 1.76,
+    "retention_amount": 0.0,
+    "grand_total_amount": 10.16
+  }
+}

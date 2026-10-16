@@ -1,0 +1,53 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1096",
+    "issue_date": "2026-10-13",
+    "due_date": "2026-11-13",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Amazon Web Services EMEA SARL",
+    "tax_id": "LU26375245",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Vercel Pro Enterprise Team Subscription",
+      "quantity": 2,
+      "unit_price": 40.0,
+      "taxable_amount": 80.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 16.8,
+      "total_amount": 96.8
+    },
+    {
+      "description": "Microsoft Azure Virtual Network Gateway & ExpressRoute",
+      "quantity": 3,
+      "unit_price": 210.0,
+      "taxable_amount": 630.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 132.3,
+      "total_amount": 762.3
+    },
+    {
+      "description": "Google Cloud Kubernetes Engine (GKE Cluster)",
+      "quantity": 1,
+      "unit_price": 95.0,
+      "taxable_amount": 95.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 19.95,
+      "total_amount": 114.95
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 805.0,
+    "tax_total_amount": 169.05,
+    "retention_amount": 0.0,
+    "grand_total_amount": 974.05
+  }
+}

@@ -1,0 +1,13 @@
+FACTURA: FAC-2026-1140
+Fecha de Emisión: 2026-10-01 | Vencimiento: 2026-11-01
+Proveedor: Mantenimiento Técnico Industrial S.L. | NIF: B81928374
+Cliente: SplitLedger Labs S.L. | CIF: ESB87219034
+Moneda: EUR
+
+DESGLOSE DE PARTIDAS:
+- Mantenimiento Preventivo Sistemas de Climatización | Cantidad: 3 x 195.00 | Base: 585.00 | IVA: 122.85 | Total: 707.85 EUR
+- Sustitución de Filtros HEPA y Recarga de Gas Refrigerante | Cantidad: 1 x 145.00 | Base: 145.00 | IVA: 30.45 | Total: 175.45 EUR
+
+Subtotal (Base Imponible): 730.00 EUR
+Cuota IVA (21%): 153.30 EUR
+Total Factura: 883.30 EUR

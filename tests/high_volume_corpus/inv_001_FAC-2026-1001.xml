@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fe:Facturae xmlns:fe="http://www.facturae.es/Facturae/2014/v3.2.1/Facturae">
+  <FileHeader>
+    <SchemaVersion>3.2.1</SchemaVersion>
+    <Modality>I</Modality>
+    <InvoiceIssuerType>EM</InvoiceIssuerType>
+  </FileHeader>
+  <Parties>
+    <SellerParty>
+      <TaxIdentification>
+        <PersonTypeCode>J</PersonTypeCode>
+        <ResidenceTypeCode>R</ResidenceTypeCode>
+        <TaxIdentificationNumber>IE6388047V</TaxIdentificationNumber>
+      </TaxIdentification>
+      <LegalEntity>
+        <CorporateName>Google Cloud Ireland Limited</CorporateName>
+      </LegalEntity>
+    </SellerParty>
+    <BuyerParty>
+      <TaxIdentification>
+        <PersonTypeCode>J</PersonTypeCode>
+        <ResidenceTypeCode>R</ResidenceTypeCode>
+        <TaxIdentificationNumber>ESB87219034</TaxIdentificationNumber>
+      </TaxIdentification>
+      <LegalEntity>
+        <CorporateName>SplitLedger Labs S.L.</CorporateName>
+      </LegalEntity>
+    </BuyerParty>
+  </Parties>
+  <Invoices>
+    <Invoice>
+      <InvoiceHeader>
+        <InvoiceNumber>FAC-2026-1001</InvoiceNumber>
+        <InvoiceDocumentType>FC</InvoiceDocumentType>
+        <InvoiceClass>OO</InvoiceClass>
+      </InvoiceHeader>
+      <InvoiceIssueData>
+        <IssueDate>2026-10-02</IssueDate>
+        <InvoiceCurrencyCode>EUR</InvoiceCurrencyCode>
+      </InvoiceIssueData>
+      <TaxesOutputs>
+        <Tax>
+          <TaxTypeCode>01</TaxTypeCode>
+          <TaxRate>21.00</TaxRate>
+          <TaxableBase><TotalAmount>185.00</TotalAmount></TaxableBase>
+          <TaxAmount><TotalAmount>38.85</TotalAmount></TaxAmount>
+        </Tax>
+      </TaxesOutputs>
+      
+      <InvoiceTotals>
+        <TotalGrossAmount>185.00</TotalGrossAmount>
+        <TotalGrossAmountBeforeTaxes>185.00</TotalGrossAmountBeforeTaxes>
+        <TotalTaxOutputs>38.85</TotalTaxOutputs>
+        <TotalTaxesWithheld>0.00</TotalTaxesWithheld>
+        <InvoiceTotal>223.85</InvoiceTotal>
+      </InvoiceTotals>
+      <Items>
+        <InvoiceLine>
+          <ItemDescription>Amazon Elastic Compute Cloud (EC2) c6g.2xlarge</ItemDescription>
+          <Quantity>1</Quantity>
+          <UnitPriceWithoutTax>185.00</UnitPriceWithoutTax>
+          <TotalCost>185.00</TotalCost>
+          <TaxesOutputs>
+            <Tax>
+              <TaxTypeCode>01</TaxTypeCode>
+              <TaxRate>21.00</TaxRate>
+              <TaxableBase><TotalAmount>185.00</TotalAmount></TaxableBase>
+              <TaxAmount><TotalAmount>38.85</TotalAmount></TaxAmount>
+            </Tax>
+          </TaxesOutputs>
+        </InvoiceLine>
+      </Items>
+    </Invoice>
+  </Invoices>
+</fe:Facturae>

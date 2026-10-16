@@ -1,0 +1,13 @@
+FACTURA	FAC-2026-1039	FECHA	2026-10-12
+PROVEEDOR	Elena Gómez Martínez	NIF	48920134K
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Honorarios Asesoría Jurídica Mercantil Contratos	3	450.00	1350.00	21.0%	1633.50
+Revisión Compliance RGPD y Cláusulas Laborales	1	300.00	300.00	21.0%	363.00
+
+Subtotal	1650.00
+Cuota IVA (21%)	346.50
+Retención IRPF (15%)	247.50
+Total Factura	1749.00

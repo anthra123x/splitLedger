@@ -1,0 +1,11 @@
+FACTURA	FAC-2026-1109	FECHA	2026-10-26
+PROVEEDOR	Mapfre Empresas Seguros S.A.	NIF	A28141935
+CLIENTE	SplitLedger Labs S.L.	NIF	ESB87219034
+DIVISA	EUR
+
+Concepto	Cantidad	PrecioUnitario	BaseImponible	TipoIVA	TotalPartida
+Póliza de Responsabilidad Civil Profesional Tecnológica	2	620.00	1240.00	0.0%	1240.00
+
+Subtotal	1240.00
+Cuota IVA (0%)	0.00
+Total Factura	1240.00

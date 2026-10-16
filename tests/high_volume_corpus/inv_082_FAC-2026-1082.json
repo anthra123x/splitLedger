@@ -1,0 +1,35 @@
+{
+  "document_type": "invoice",
+  "header": {
+    "invoice_number": "FAC-2026-1082",
+    "issue_date": "2026-10-27",
+    "due_date": "2026-11-27",
+    "currency": "EUR"
+  },
+  "issuer": {
+    "company_name": "Microsoft Ireland Operations Ltd",
+    "tax_id": "IE8256796U",
+    "country": "ES"
+  },
+  "recipient": {
+    "company_name": "SplitLedger Labs S.L.",
+    "tax_id": "ESB87219034"
+  },
+  "line_items": [
+    {
+      "description": "Google Cloud Kubernetes Engine (GKE Cluster)",
+      "quantity": 1,
+      "unit_price": 95.0,
+      "taxable_amount": 95.0,
+      "tax_rate_percentage": 21.0,
+      "tax_amount": 19.95,
+      "total_amount": 114.95
+    }
+  ],
+  "financial_summary": {
+    "subtotal_amount": 95.0,
+    "tax_total_amount": 19.95,
+    "retention_amount": 0.0,
+    "grand_total_amount": 114.95
+  }
+}
