@@ -1,0 +1,41 @@
+name: CI / Test & Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --frozen || uv pip install -e .
+
+      - name: Run Precision and Punctuality Tests
+        run: uv run python -m tests.test_precision_and_punctuality
+
+      - name: Run Financial Intelligence Tests
+        run: uv run python -m tests.test_financial_endpoints
+
+      - name: Run Incompatible Algebra & Math Solver Tests
+        run: uv run python -m tests.test_unsolvable_math
+
+      - name: Build Distribution Packages (sdist & wheel)
+        run: uv build
