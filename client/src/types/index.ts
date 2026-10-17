@@ -80,8 +80,24 @@ export interface CurrencyConversion {
   regulation?: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  color?: string;
+  icon?: string;
+  is_archived?: boolean;
+  invoices_count?: number;
+  total_volume?: number | string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Invoice {
   id: string;
+  workspace_id?: string | null;
+  workspace?: Workspace | null;
   filename: string;
   original_name: string;
   file_path: string;

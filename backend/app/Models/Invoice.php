@@ -40,4 +40,9 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoiceItem::class, 'invoice_id')->orderBy('item_index');
     }
+
+    public function workspace(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'workspace_id');
+    }
 }

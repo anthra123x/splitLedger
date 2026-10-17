@@ -22,7 +22,7 @@ class InvoiceController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Invoice::withCount('items')->orderBy('created_at', 'desc');
+        $query = Invoice::withCount('items')->with('workspace')->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {
             $search = '%' . $request->input('search') . '%';
@@ -41,6 +41,15 @@ class InvoiceController extends Controller
                 $query->whereIn('status', ['processing', 'pending']);
             } else {
                 $query->where('status', $status);
+            }
+        }
+
+        if ($request->filled('workspace_id')) {
+            $wsId = $request->input('workspace_id');
+            if ($wsId === 'unassigned' || $wsId === 'null') {
+                $query->whereNull('workspace_id');
+            } else {
+                $query->where('workspace_id', $wsId);
             }
         }
 
@@ -63,7 +72,7 @@ class InvoiceController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $invoice = Invoice::with('items')->find($id);
+        $invoice = Invoice::with(['items', 'workspace'])->find($id);
 
         if (!$invoice) {
             return response()->json([
@@ -395,6 +404,7 @@ class InvoiceController extends Controller
             'payment_method' => 'nullable|string',
             'iban' => 'nullable|string',
             'currency' => 'nullable|string',
+            'workspace_id' => 'nullable|string',
             'status' => 'nullable|string',
             'subtotal' => 'nullable|numeric',
             'tax_total' => 'nullable|numeric',
@@ -584,6 +594,15 @@ class InvoiceController extends Controller
                     });
                 }
             }
+
+            if ($request->filled('workspace_id')) {
+                $wsId = $request->input('workspace_id');
+                if ($wsId === 'unassigned' || $wsId === 'null') {
+                    $query->whereNull('workspace_id');
+                } else {
+                    $query->where('workspace_id', $wsId);
+                }
+            }
         }
 
         // Limit protection to prevent server memory exhaustion
@@ -701,6 +720,279 @@ class InvoiceController extends Controller
         return response()->download($tempZipPath, $downloadName, [
             'Content-Type' => 'application/zip',
         ])->deleteFileAfterSend(true);
+    }
+
+    public function exportPdf(Request $request): \Illuminate\Http\Response|JsonResponse
+    {
+        $query = Invoice::with('items')->orderBy('created_at', 'desc');
+
+        if ($request->filled('ids')) {
+            $ids = array_filter(explode(',', (string) $request->input('ids')));
+            if (!empty($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        } else {
+            if ($request->filled('search')) {
+                $search = '%' . $request->input('search') . '%';
+                $query->where(function ($q) use ($search) {
+                    $q->where('supplier_name', 'ilike', $search)
+                      ->orWhere('invoice_number', 'ilike', $search)
+                      ->orWhere('supplier_tax_id', 'ilike', $search);
+                });
+            }
+
+            if ($request->filled('status') && $request->input('status') !== 'Todas' && $request->input('status') !== 'all') {
+                $status = $request->input('status');
+                if ($status === 'Desglosadas') {
+                    $query->whereIn('status', ['analyzed', 'reconciled']);
+                } elseif ($status === 'En Proceso') {
+                    $query->whereIn('status', ['processing', 'pending']);
+                } else {
+                    $query->where('status', $status);
+                }
+            }
+
+            if ($request->filled('date')) {
+                $date = $request->input('date');
+                $query->where(function ($q) use ($date) {
+                    $q->whereDate('created_at', $date)
+                      ->orWhere('invoice_date', $date);
+                });
+            }
+
+            if ($request->filled('workspace_id')) {
+                $wsId = $request->input('workspace_id');
+                if ($wsId === 'unassigned' || $wsId === 'null') {
+                    $query->whereNull('workspace_id');
+                } else {
+                    $query->where('workspace_id', $wsId);
+                }
+            }
+        }
+
+        $invoices = $query->get();
+
+        if ($invoices->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No se encontraron facturas para exportar a PDF.'
+            ], 404);
+        }
+
+        $totalBase = $invoices->sum('subtotal');
+        $totalTax = $invoices->sum('tax_total');
+        $totalGrand = $invoices->sum('grand_total');
+        $dateLabel = $request->input('date') ?: date('Y-m-d');
+
+        $html = '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SplitLedger — Libro Diario y Registro de Facturas (PDF)</title>
+    <style>
+        @page { size: A4 landscape; margin: 12mm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e2022; background: #fff; margin: 0; padding: 0; font-size: 11px; }
+        .header { background: #131315; color: #fff; padding: 14px 18px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+        .header p { margin: 3px 0 0; color: #c4c7c8; font-size: 11px; }
+        .kpi-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .kpi-card { flex: 1; border: 1px dashed #d0d3d4; border-radius: 6px; padding: 10px 14px; background: #fafbfc; }
+        .kpi-card span { display: block; font-size: 10px; color: #646669; }
+        .kpi-card strong { font-size: 14px; color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5px; }
+        th { background: #201f22; color: #fff; font-weight: 600; text-align: left; padding: 7px 8px; border: 1px solid #353437; }
+        td { padding: 6px 8px; border: 1px solid #e1e4e6; }
+        tr:nth-child(even) { background: #fcfdfe; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .status-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; background: #e8f5e9; color: #2e7d32; }
+        .footer { font-size: 9px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 20px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 12px; text-align: right;">
+        <button onclick="window.print()" style="padding: 8px 16px; background: #131315; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Imprimir o Guardar como PDF</button>
+    </div>
+    <div class="header">
+        <div>
+            <h1>SplitLedger — Libro Diario y Registro de Facturas</h1>
+            <p>Jornada / Workspace: ' . htmlspecialchars($dateLabel) . ' • Auditoría Forense PGC</p>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: bold;">' . number_format($totalGrand, 2, ',', '.') . ' €</div>
+            <p>' . count($invoices) . ' facturas procesadas</p>
+        </div>
+    </div>
+    <div class="kpi-row">
+        <div class="kpi-card"><span>Total Facturas</span><strong>' . count($invoices) . ' docs</strong></div>
+        <div class="kpi-card"><span>Base Imponible Agregada</span><strong>' . number_format($totalBase, 2, ',', '.') . ' €</strong></div>
+        <div class="kpi-card"><span>Cuota IVA Total</span><strong>' . number_format($totalTax, 2, ',', '.') . ' €</strong></div>
+        <div class="kpi-card"><span>Volumen Consolidado</span><strong>' . number_format($totalGrand, 2, ',', '.') . ' €</strong></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30px;" class="text-center">#</th>
+                <th>Nº Factura</th>
+                <th>Fecha</th>
+                <th>Proveedor / Emisor</th>
+                <th>NIF / CIF</th>
+                <th>Cliente</th>
+                <th class="text-right">Base Imponible</th>
+                <th class="text-right">IVA</th>
+                <th class="text-right">Total Factura</th>
+                <th class="text-center">Estado</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+        foreach ($invoices as $idx => $inv) {
+            $num = $idx + 1;
+            $html .= '<tr>
+                <td class="text-center">' . $num . '</td>
+                <td><strong>' . htmlspecialchars($inv->invoice_number ?: 'S/N') . '</strong></td>
+                <td>' . htmlspecialchars($inv->invoice_date ?: '-') . '</td>
+                <td>' . htmlspecialchars($inv->supplier_name ?: 'Proveedor') . '</td>
+                <td>' . htmlspecialchars($inv->supplier_tax_id ?: '-') . '</td>
+                <td>' . htmlspecialchars($inv->customer_name ?: 'SplitLedger') . '</td>
+                <td class="text-right">' . number_format($inv->subtotal ?? 0, 2, ',', '.') . ' €</td>
+                <td class="text-right">' . number_format($inv->tax_total ?? 0, 2, ',', '.') . ' €</td>
+                <td class="text-right" style="font-weight: bold;">' . number_format($inv->grand_total ?? 0, 2, ',', '.') . ' €</td>
+                <td class="text-center"><span class="status-badge">' . strtoupper($inv->status ?: 'CONCILIADA') . '</span></td>
+            </tr>';
+        }
+
+        $html .= '</tbody>
+    </table>
+    <div class="footer">
+        SplitLedger v2.4 • Auditoría Forense con Teorema de Rouché-Frobenius • Generado el ' . date('d/m/Y H:i:s') . '
+    </div>
+    <script>
+        if (window.location.search.includes("autoprint=true")) {
+            window.addEventListener("DOMContentLoaded", () => setTimeout(() => window.print(), 300));
+        }
+    </script>
+</body>
+</html>';
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8'
+        ]);
+    }
+
+    public function showPdf(string $id): \Illuminate\Http\Response|JsonResponse
+    {
+        $inv = Invoice::with('items')->find($id);
+        if (!$inv) {
+            return response()->json(['status' => 'error', 'message' => 'Factura no encontrada'], 404);
+        }
+
+        $html = '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SplitLedger — Factura ' . htmlspecialchars($inv->invoice_number) . '</title>
+    <style>
+        @page { size: A4 portrait; margin: 15mm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #1e2022; background: #fff; margin: 0; padding: 0; font-size: 11px; }
+        .header { background: #131315; color: #fff; padding: 14px 18px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+        .header p { margin: 3px 0 0; color: #c4c7c8; font-size: 11px; }
+        .grid-2 { display: flex; gap: 16px; margin-bottom: 20px; }
+        .card { flex: 1; border: 1px dashed #d0d3d4; border-radius: 6px; padding: 12px 14px; background: #fafbfc; }
+        .card h4 { margin: 0 0 6px; font-size: 10px; color: #646669; text-transform: uppercase; }
+        .card strong { font-size: 12px; color: #111; display: block; margin-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10.5px; }
+        th { background: #201f22; color: #fff; font-weight: 600; text-align: left; padding: 7px 8px; border: 1px solid #353437; }
+        td { padding: 6px 8px; border: 1px solid #e1e4e6; }
+        tr:nth-child(even) { background: #fcfdfe; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .totals-box { width: 280px; margin-left: auto; border: 1px solid #d0d3d4; border-radius: 6px; padding: 12px; background: #fafbfc; }
+        .total-row { display: flex; justify-content: space-between; padding: 4px 0; }
+        .total-grand { border-top: 1px solid #201f22; font-weight: bold; font-size: 13px; margin-top: 6px; padding-top: 6px; }
+        .footer { font-size: 9px; color: #888; text-align: center; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 30px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 12px; text-align: right;">
+        <button onclick="window.print()" style="padding: 8px 16px; background: #131315; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">Imprimir / Guardar PDF</button>
+    </div>
+    <div class="header">
+        <div>
+            <h1>SplitLedger</h1>
+            <p>Dossier Contable Oficial • Factura ' . htmlspecialchars($inv->invoice_number) . '</p>
+        </div>
+        <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: bold;">' . number_format($inv->grand_total, 2, ',', '.') . ' €</div>
+            <p>ID: ' . substr($inv->id, 0, 16) . '...</p>
+        </div>
+    </div>
+    <div class="grid-2">
+        <div class="card">
+            <h4>Proveedor / Emisor</h4>
+            <strong>' . htmlspecialchars($inv->supplier_name) . '</strong>
+            <div>NIF/CIF: ' . htmlspecialchars($inv->supplier_tax_id ?: '-') . '</div>
+            <div>Fecha: ' . htmlspecialchars($inv->invoice_date ?: '-') . '</div>
+        </div>
+        <div class="card">
+            <h4>Cliente / Receptor</h4>
+            <strong>' . htmlspecialchars($inv->customer_name ?: 'SplitLedger Enterprise S.L.') . '</strong>
+            <div>NIF/CIF: ' . htmlspecialchars($inv->customer_tax_id ?: 'ES-B87654321') . '</div>
+            <div>Estado: ' . strtoupper($inv->status ?: 'CONCILIADA') . '</div>
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25px;" class="text-center">#</th>
+                <th>Concepto</th>
+                <th>Cuenta PGC</th>
+                <th>Denominación</th>
+                <th class="text-right">Base Imponible</th>
+                <th class="text-center">IVA %</th>
+                <th class="text-right">Cuota IVA</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+        foreach ($inv->items as $it) {
+            $html .= '<tr>
+                <td class="text-center">' . ($it->item_index ?: 1) . '</td>
+                <td>' . htmlspecialchars($it->concept ?: '-') . '</td>
+                <td>' . htmlspecialchars($it->account_code ?: '629000') . '</td>
+                <td>' . htmlspecialchars($it->account_name ?: 'Servicios Generales') . '</td>
+                <td class="text-right">' . number_format($it->base_amount ?? 0, 2, ',', '.') . ' €</td>
+                <td class="text-center">' . ($it->tax_rate ?? 21) . '%</td>
+                <td class="text-right">' . number_format($it->tax_amount ?? 0, 2, ',', '.') . ' €</td>
+                <td class="text-right" style="font-weight: bold;">' . number_format($it->total_amount ?? 0, 2, ',', '.') . ' €</td>
+            </tr>';
+        }
+
+        $html .= '</tbody>
+    </table>
+    <div class="totals-box">
+        <div class="total-row"><span>Base Imponible:</span><span>' . number_format($inv->subtotal, 2, ',', '.') . ' €</span></div>
+        <div class="total-row"><span>Cuota Total IVA:</span><span>' . number_format($inv->tax_total, 2, ',', '.') . ' €</span></div>';
+
+        if ($inv->retention_total > 0) {
+            $html .= '<div class="total-row"><span>Retención IRPF:</span><span>- ' . number_format($inv->retention_total, 2, ',', '.') . ' €</span></div>';
+        }
+
+        $html .= '<div class="total-row total-grand"><span>TOTAL FACTURA:</span><span>' . number_format($inv->grand_total, 2, ',', '.') . ' €</span></div>
+    </div>
+    <div class="footer">
+        SplitLedger v2.4 • Auditoría Forense y Conciliación PGC • Paridad Partida Doble Verificada
+    </div>
+</body>
+</html>';
+
+        return response($html, 200, [
+            'Content-Type' => 'text/html; charset=UTF-8'
+        ]);
     }
 
     public function getRules(): JsonResponse
@@ -960,6 +1252,7 @@ class InvoiceController extends Controller
      */
     private function enrichInvoiceData(Invoice $invoice): array
     {
+        $invoice->loadMissing(['items', 'workspace']);
         $data = $invoice->toArray();
         $items = $invoice->items ?: collect([]);
         $meta = $invoice->extra_metadata ?? [];

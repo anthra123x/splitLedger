@@ -1,10 +1,11 @@
-import { Invoice, SystemMetrics, EngineStats } from '../types/index.js';
+import { Invoice, SystemMetrics, EngineStats, Workspace } from '../types/index.js';
 
 const API_BASE = '/api';
 
 export interface FetchInvoicesParams {
   search?: string;
   status?: string;
+  workspace_id?: string;
   page?: number;
   limit?: number;
 }
@@ -22,10 +23,11 @@ export interface InvoicesResponse {
   };
 }
 
-export async function fetchInvoices({ search = '', status = '', page = 1, limit = 50 }: FetchInvoicesParams = {}): Promise<InvoicesResponse> {
+export async function fetchInvoices({ search = '', status = '', workspace_id = '', page = 1, limit = 50 }: FetchInvoicesParams = {}): Promise<InvoicesResponse> {
   const query = new URLSearchParams();
   if (search) query.append('search', search);
   if (status && status !== 'Todas' && status !== 'all') query.append('status', status);
+  if (workspace_id) query.append('workspace_id', workspace_id);
   query.append('page', String(page));
   query.append('limit', String(limit));
 
@@ -118,7 +120,7 @@ export function getExportCsvUrl(): string {
   return `${API_BASE}/invoices/export`;
 }
 
-export function getExportZipUrl(params?: { ids?: string[]; search?: string; status?: string }): string {
+export function getExportZipUrl(params?: { ids?: string[]; search?: string; status?: string; date?: string; workspace_id?: string }): string {
   const q = new URLSearchParams();
   if (params?.ids && params.ids.length > 0) {
     q.append('ids', params.ids.join(','));
@@ -129,8 +131,99 @@ export function getExportZipUrl(params?: { ids?: string[]; search?: string; stat
   if (params?.status && params.status !== 'Todas' && params.status !== 'all') {
     q.append('status', params.status);
   }
+  if (params?.date) {
+    q.append('date', params.date);
+  }
+  if (params?.workspace_id) {
+    q.append('workspace_id', params.workspace_id);
+  }
   const queryStr = q.toString();
   return `${API_BASE}/invoices/export-zip${queryStr ? '?' + queryStr : ''}`;
+}
+
+export function getExportPdfUrl(params?: { ids?: string[]; search?: string; status?: string; date?: string; workspace_id?: string; autoprint?: boolean }): string {
+  const q = new URLSearchParams();
+  if (params?.ids && params.ids.length > 0) {
+    q.append('ids', params.ids.join(','));
+  }
+  if (params?.search) {
+    q.append('search', params.search);
+  }
+  if (params?.status && params.status !== 'Todas' && params.status !== 'all') {
+    q.append('status', params.status);
+  }
+  if (params?.date) {
+    q.append('date', params.date);
+  }
+  if (params?.workspace_id) {
+    q.append('workspace_id', params.workspace_id);
+  }
+  if (params?.autoprint) {
+    q.append('autoprint', 'true');
+  }
+  const queryStr = q.toString();
+  return `${API_BASE}/invoices/export-pdf${queryStr ? '?' + queryStr : ''}`;
+}
+
+export function getInvoicePdfUrl(id: string): string {
+  return `${API_BASE}/invoices/${id}/pdf`;
+}
+
+export interface WorkspacesResponse {
+  status: string;
+  data: {
+    workspaces: Workspace[];
+    unassigned: {
+      count: number;
+      total_volume: number;
+    };
+  };
+}
+
+export async function fetchWorkspaces(): Promise<WorkspacesResponse> {
+  const res = await fetch(`${API_BASE}/workspaces`);
+  if (!res.ok) throw new Error('Error al cargar workspaces');
+  return res.json();
+}
+
+export async function createWorkspace(data: { name: string; description?: string; color?: string; icon?: string }): Promise<{ status: string; data: Workspace }> {
+  const res = await fetch(`${API_BASE}/workspaces`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'Error al crear workspace');
+  }
+  return res.json();
+}
+
+export async function updateWorkspace(id: string, data: Partial<Workspace>): Promise<{ status: string; data: Workspace }> {
+  const res = await fetch(`${API_BASE}/workspaces/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Error al actualizar workspace');
+  return res.json();
+}
+
+export async function deleteWorkspace(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/workspaces/${id}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) throw new Error('Error al eliminar workspace');
+}
+
+export async function assignInvoicesToWorkspace(workspaceId: string, invoiceIds: string[]): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${API_BASE}/workspaces/${workspaceId}/assign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invoice_ids: invoiceIds })
+  });
+  if (!res.ok) throw new Error('Error al asignar facturas al workspace');
+  return res.json();
 }
 
 export interface UploadStreamProgressEvent {
@@ -279,5 +372,135 @@ export async function fetchUserProfile(): Promise<UserProfileResponse> {
   if (!res.ok) throw new Error('Error al cargar perfil de usuario');
   return res.json();
 }
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  organization: string;
+}
+
+export interface AuthResponse {
+  status: string;
+  message?: string;
+  data?: {
+    user: AuthUser;
+    token: string;
+  };
+  errors?: Record<string, string[]>;
+}
+
+const AUTH_STORAGE_KEY = 'splitledger_auth_session';
+
+export function getStoredAuth(): { user: AuthUser; token: string } | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredAuth(data: { user: AuthUser; token: string }) {
+  try {
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    console.error('Error al guardar credenciales locales:', err);
+  }
+}
+
+export function clearStoredAuth() {
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (err) {
+    console.error('Error al limpiar credenciales locales:', err);
+  }
+}
+
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al iniciar sesión');
+  }
+  if (data.data) {
+    setStoredAuth(data.data);
+  }
+  return data;
+}
+
+export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = data.errors ? Object.values(data.errors).flat().join('. ') : data.message;
+    throw new Error(msg || 'Error al registrar usuario');
+  }
+  if (data.data) {
+    setStoredAuth(data.data);
+  }
+  return data;
+}
+
+export async function loginWithMagicLink(email: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/magic-link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error al solicitar enlace de acceso');
+  }
+  if (data.data) {
+    setStoredAuth(data.data);
+  }
+  return data;
+}
+
+export async function loginWithSso(provider: string = 'google'): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/sso`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Error en autenticación SSO');
+  }
+  if (data.data) {
+    setStoredAuth(data.data);
+  }
+  return data;
+}
+
+export async function logoutUser(): Promise<void> {
+  try {
+    const auth = getStoredAuth();
+    if (auth?.token) {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${auth.token}`
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('Cierre de sesión local:', err);
+  } finally {
+    clearStoredAuth();
+  }
+}
+
 
 

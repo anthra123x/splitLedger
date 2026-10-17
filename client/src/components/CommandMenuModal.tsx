@@ -113,6 +113,17 @@ export default function CommandMenuModal({ isOpen, onClose, onSelectAction, invo
             <span className="text-[10px] text-zinc-500 font-mono">⌘E</span>
           </button>
 
+          <button
+            onClick={() => { onSelectAction('view:auth'); onClose(false); }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-[#2a2a2c] text-left text-xs text-zinc-200 transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[18px] text-zinc-400 group-hover:text-white">passkey</span>
+              <span>Iniciar Sesión / Registro de Auditor</span>
+            </div>
+            <span className="text-[10px] text-zinc-500 font-mono">⌘L</span>
+          </button>
+
           {/* Facturas coincidentes */}
           {filteredInvoices.length > 0 && (
             <>

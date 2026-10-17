@@ -7,9 +7,10 @@ export interface NotificationItem {
 }
 
 interface NavbarProps {
-  currentView: 'upload' | 'detail' | 'history';
-  setCurrentView: (view: 'upload' | 'detail' | 'history') => void;
+  currentView: 'upload' | 'detail' | 'history' | 'auth';
+  setCurrentView: (view: 'upload' | 'detail' | 'history' | 'auth') => void;
   onOpenCommandMenu: () => void;
+  onOpenAuth?: () => void;
   notifications?: NotificationItem[];
 }
 
@@ -17,6 +18,7 @@ export default function Navbar({
   currentView,
   setCurrentView,
   onOpenCommandMenu,
+  onOpenAuth,
   notifications = []
 }: NavbarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
@@ -278,9 +280,17 @@ export default function Navbar({
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                       <span>Sesión Cifrada SSL</span>
                     </div>
-                    <span className="text-[10px] text-[#c4c7c8] font-mono px-1.5 py-0.5 rounded bg-[#201f22] border border-dashed border-[#444748]/40">
-                      ID: #{profileData?.user.id || 1}
-                    </span>
+                    {onOpenAuth && (
+                      <button
+                        onClick={() => {
+                          setShowProfile(false);
+                          onOpenAuth();
+                        }}
+                        className="text-[11px] text-white hover:text-zinc-200 font-medium px-2 py-1 rounded bg-[#353437] hover:bg-[#444748] transition-colors cursor-pointer"
+                      >
+                        Iniciar sesión / Registro
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

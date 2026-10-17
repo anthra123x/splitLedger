@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { updateInvoice, fetchAccountingRules } from '../services/api';
-import { Invoice, InvoiceItem } from '../types/index.js';
+import { updateInvoice, fetchAccountingRules, fetchWorkspaces } from '../services/api';
+import { exportInvoicePdf } from '../services/pdfExportService';
+import { Invoice, InvoiceItem, Workspace } from '../types/index.js';
 import ScanningAnimationCard from '../components/ScanningAnimationCard';
 
 const DEFAULT_PGC_ACCOUNTS = [
@@ -60,6 +61,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(invoice.workspace_id || null);
   const [isScanning, setIsScanning] = useState(false);
   const [scanStage, setScanStage] = useState(1);
   const [scanProgress, setScanProgress] = useState(25);
@@ -95,6 +98,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
 
   useEffect(() => {
     setItems(invoice.items || []);
+    setCurrentWorkspaceId(invoice.workspace_id || null);
   }, [invoice]);
 
   useEffect(() => {
@@ -103,7 +107,27 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
         setAccounts(res.data.accounts);
       }
     }).catch(() => null);
+
+    fetchWorkspaces().then(res => {
+      if (res.data) setWorkspaces(res.data);
+    }).catch(() => null);
   }, []);
+
+  const handleWorkspaceChange = async (targetWsId: string) => {
+    try {
+      const updatedVal = targetWsId || null;
+      const res = await updateInvoice(invoice.id, { workspace_id: updatedVal });
+      if (res.data) {
+        setCurrentWorkspaceId(updatedVal);
+        if (onInvoiceUpdated) onInvoiceUpdated(res.data);
+        const wsObj = workspaces.find(w => w.id === updatedVal);
+        setSaveMessage(`[OK] Asignado a ${wsObj ? wsObj.name : 'sin workspace'}.`);
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (err: any) {
+      alert(`Error al actualizar workspace: ${err.message}`);
+    }
+  };
 
   const availableAccounts = accounts.length > 0 ? accounts : DEFAULT_PGC_ACCOUNTS;
   const pgcGroups = Array.from(new Set(availableAccounts.map(a => a.group || 'Grupo 62 - Servicios Exteriores')));
@@ -268,6 +292,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
         tax_total: currentItemsTaxSum,
         grand_total: isBalanced ? targetGrandTotal : expectedDocSum,
         status: 'reconciled',
+        workspace_id: currentWorkspaceId,
         items
       });
       setSaveMessage('[OK] Asiento contable guardado y conciliado en Neon PostgreSQL.');
@@ -310,6 +335,33 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     {invoice.invoice_date}
                   </span>
                 )}
+                {/* Workspace Selector Badge */}
+                <div className="relative inline-flex items-center shrink-0">
+                  <select
+                    value={currentWorkspaceId || ''}
+                    onChange={(e) => handleWorkspaceChange(e.target.value)}
+                    className="bg-[#201f22] hover:bg-[#252427] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-lg pl-6 pr-7 py-1 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors"
+                    title="Asignar factura a un Workspace de Proyecto"
+                  >
+                    <option value="">Sin Workspace</option>
+                    {workspaces.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    className="w-2.5 h-2.5 rounded-full absolute left-2 pointer-events-none"
+                    style={{
+                      backgroundColor: currentWorkspaceId
+                        ? workspaces.find((w) => w.id === currentWorkspaceId)?.color || '#38bdf8'
+                        : '#71717a',
+                    }}
+                  />
+                  <span className="material-symbols-outlined text-[14px] text-zinc-400 absolute right-1.5 pointer-events-none">
+                    expand_more
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -326,6 +378,15 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                   {(targetGrandTotal).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
               </div>
+
+              <button
+                onClick={() => exportInvoicePdf(invoice)}
+                className="bg-[#2a2a2c] hover:bg-[#353437] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Descargar Dossier Oficial en PDF"
+              >
+                <span className="material-symbols-outlined text-[16px] text-red-400">picture_as_pdf</span>
+                <span className="hidden sm:inline">Exportar PDF</span>
+              </button>
 
               <button
                 onClick={handleSaveAndReconcile}

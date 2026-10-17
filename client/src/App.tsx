@@ -4,6 +4,7 @@ import CommandMenuModal from './components/CommandMenuModal';
 import UploadView from './views/UploadView';
 import DetailView from './views/DetailView';
 import HistoryView from './views/HistoryView';
+import AuthView from './views/AuthView';
 import { fetchInvoices, fetchInvoiceById, fetchMetrics, getExportCsvUrl } from './services/api';
 import { Invoice, SystemMetrics } from './types';
 
@@ -11,8 +12,8 @@ import FloatingAiChat from './components/FloatingAiChat';
 import InteractiveDotGrid from './components/InteractiveDotGrid';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history'>('upload');
-  const [previousView, setPreviousView] = useState<'upload' | 'history'>('upload');
+  const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history' | 'auth'>('upload');
+  const [previousView, setPreviousView] = useState<'upload' | 'history' | 'detail'>('upload');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [metrics, setMetrics] = useState<SystemMetrics>({});
@@ -101,6 +102,10 @@ export default function App() {
     if (action === 'view:upload') setCurrentView('upload');
     if (action === 'view:detail') setCurrentView('detail');
     if (action === 'view:history') setCurrentView('history');
+    if (action === 'view:auth') {
+      setPreviousView(currentView === 'auth' ? 'upload' : currentView);
+      setCurrentView('auth');
+    }
     if (action === 'export:csv') {
       window.location.href = getExportCsvUrl();
     }
@@ -111,6 +116,21 @@ export default function App() {
     }
   };
 
+  if (currentView === 'auth') {
+    return (
+      <AuthView
+        onBack={() => setCurrentView(previousView)}
+        onAuthSuccess={(user) => {
+          setNotifications((prev) => [
+            { title: `Sesión iniciada: ${user.name}`, detail: `Autenticado como ${user.role} (${user.email})` },
+            ...prev
+          ]);
+          loadData();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[#131315] text-[#e5e1e4] flex flex-col selection:bg-white/20 selection:text-white">
       {/* Interactive Blueprint Dot Grid Background */}
@@ -120,6 +140,10 @@ export default function App() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         onOpenCommandMenu={() => setIsCommandMenuOpen(true)}
+        onOpenAuth={() => {
+          setPreviousView(currentView);
+          setCurrentView('auth');
+        }}
         notifications={notifications}
       />
 
@@ -153,6 +177,7 @@ export default function App() {
               metrics={metrics}
               onSelectInvoice={(inv) => handleSelectInvoice(inv, 'history')}
               onInvoiceDeleted={handleInvoiceDeleted}
+              onInvoicesUpdated={loadData}
             />
           </div>
         )}
