@@ -75,7 +75,8 @@ export default function HistoryView({
     try {
       const res = await fetchWorkspaces();
       if (res.data) {
-        setCustomWorkspaces(res.data.workspaces || []);
+        const list = Array.isArray(res.data) ? res.data : (res.data.workspaces || []);
+        setCustomWorkspaces(list);
         if (res.data.unassigned) {
           setUnassignedStats(res.data.unassigned);
         }
@@ -283,12 +284,20 @@ export default function HistoryView({
     }
   };
 
-  // Bulk Assign Invoices to Workspace
+  // Single Invoice Assign to Workspace
+  const handleOpenAssignSingle = (inv: Invoice) => {
+    setSelectedIds([inv.id]);
+    setAssignTargetWsId(inv.workspace_id || 'unassign');
+    loadCustomWorkspaces();
+    setShowAssignModal(true);
+  };
+
+  // Bulk or Single Assign Invoices to Workspace
   const handleAssignInvoicesSubmit = async () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 || !assignTargetWsId) return;
 
     try {
-      await assignInvoicesToWorkspace(assignTargetWsId || 'unassign', selectedIds);
+      await assignInvoicesToWorkspace(assignTargetWsId, selectedIds);
       setSelectedIds([]);
       setShowAssignModal(false);
       await loadCustomWorkspaces();
@@ -381,15 +390,33 @@ export default function HistoryView({
                 <span className="text-[11px] text-zinc-400 font-mono shrink-0">
                   NIF: {inv.supplier_tax_id || 'N/D'}
                 </span>
-                {assignedWs && (
-                  <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10 max-w-[150px] truncate"
+                {assignedWs ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenAssignSingle(inv);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10 max-w-[150px] truncate hover:border-white/40 cursor-pointer transition-colors"
                     style={{ backgroundColor: `${assignedWs.color || '#ffffff'}15`, color: assignedWs.color || '#ffffff' }}
-                    title={assignedWs.name}
+                    title={`Workspace: ${assignedWs.name} (Click para cambiar)`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: assignedWs.color || '#ffffff' }}></span>
                     <span className="truncate">{assignedWs.name}</span>
-                  </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenAssignSingle(inv);
+                    }}
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono text-zinc-500 hover:text-zinc-300 border border-dashed border-zinc-700/60 hover:border-zinc-500 cursor-pointer transition-colors"
+                    title="Asignar factura a un Workspace"
+                  >
+                    <span className="material-symbols-outlined text-[11px]">drive_file_move</span>
+                    <span>Sin workspace</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -427,6 +454,17 @@ export default function HistoryView({
           </td>
           <td className="px-4 py-3.5 text-right whitespace-nowrap">
             <div className="flex items-center justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenAssignSingle(inv);
+                }}
+                className="p-1.5 rounded-lg bg-[#2a2a2c] hover:bg-[#353437] text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                title="Mover factura a Workspace"
+              >
+                <span className="material-symbols-outlined text-[16px] text-sky-400">drive_file_move</span>
+              </button>
               <button
                 type="button"
                 onClick={(e) => {
@@ -980,7 +1018,16 @@ export default function HistoryView({
                 {/* Assign to Workspace Button */}
                 <button
                   type="button"
-                  onClick={() => setShowAssignModal(true)}
+                  onClick={() => {
+                    loadCustomWorkspaces();
+                    if (selectedIds.length === 1) {
+                      const inv = invoices.find((i) => i.id === selectedIds[0]);
+                      setAssignTargetWsId(inv?.workspace_id || 'unassign');
+                    } else {
+                      setAssignTargetWsId('');
+                    }
+                    setShowAssignModal(true);
+                  }}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-800 border border-dashed border-zinc-600 text-white text-xs hover:bg-zinc-700 transition-colors cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px] text-sky-400">drive_file_move</span>
@@ -1016,16 +1063,19 @@ export default function HistoryView({
           </div>
         </div>
 
-        {/* BULK ASSIGN MODAL */}
+        {/* BULK / SINGLE ASSIGN MODAL */}
         {showAssignModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
             <div className="w-full max-w-md bg-[#1c1b1d] border border-dashed border-[#444748] rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
               <div className="flex items-center justify-between pb-2 border-b border-dashed border-[#444748]/50">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-white text-[20px]">drive_file_move</span>
-                  <h3 className="text-sm font-semibold text-white">Mover {selectedIds.length} Facturas a Workspace</h3>
+                  <h3 className="text-sm font-semibold text-white">
+                    {selectedIds.length === 1 ? 'Mover Factura a Workspace' : `Mover ${selectedIds.length} Facturas a Workspace`}
+                  </h3>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setShowAssignModal(false)}
                   className="text-zinc-400 hover:text-white"
                 >
@@ -1033,7 +1083,7 @@ export default function HistoryView({
                 </button>
               </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 <label className="text-xs text-zinc-400 block mb-1">Selecciona el workspace de destino:</label>
 
                 {/* Option: Unassign */}
@@ -1045,44 +1095,87 @@ export default function HistoryView({
                 >
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[16px] text-zinc-400">inbox</span>
-                    <span className="text-xs font-medium">Bandeja General (Desvincular)</span>
+                    <span className="text-xs font-medium">Bandeja General (Sin Workspace)</span>
                   </div>
                   {assignTargetWsId === 'unassign' && <span className="material-symbols-outlined text-[16px] text-white">check</span>}
                 </div>
 
                 {/* Options: Custom Workspaces */}
-                {customWorkspaces.map((ws) => (
-                  <div
-                    key={ws.id}
-                    onClick={() => setAssignTargetWsId(ws.id)}
-                    className={`p-2.5 rounded-xl border cursor-pointer flex items-center justify-between transition-colors ${
-                      assignTargetWsId === ws.id ? 'bg-[#353437] border-white text-white' : 'bg-[#201f22] border-white/5 text-zinc-300 hover:bg-[#2a2a2c]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ws.color || '#ffffff' }} />
-                      <span className="text-xs font-medium">{ws.name}</span>
-                    </div>
-                    {assignTargetWsId === ws.id && <span className="material-symbols-outlined text-[16px] text-white">check</span>}
+                {customWorkspaces.length === 0 ? (
+                  <div className="p-4 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/50 text-center">
+                    <span className="material-symbols-outlined text-zinc-500 text-[24px] block mb-1">folder_off</span>
+                    <p className="text-xs text-zinc-400">No hay workspaces de proyectos creados todavía.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAssignModal(false);
+                        setActiveCategory('custom');
+                        setIsCreatingWs(true);
+                      }}
+                      className="mt-2 text-xs text-sky-400 hover:underline font-medium cursor-pointer"
+                    >
+                      + Crear un nuevo Workspace
+                    </button>
                   </div>
-                ))}
+                ) : (
+                  customWorkspaces.map((ws) => (
+                    <div
+                      key={ws.id}
+                      onClick={() => setAssignTargetWsId(ws.id)}
+                      className={`p-2.5 rounded-xl border cursor-pointer flex items-center justify-between transition-colors ${
+                        assignTargetWsId === ws.id ? 'bg-[#353437] border-white text-white' : 'bg-[#201f22] border-white/5 text-zinc-300 hover:bg-[#2a2a2c]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: ws.color || '#ffffff' }} />
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-medium text-white truncate">{ws.name}</span>
+                          {ws.description && (
+                            <span className="text-[10px] text-zinc-400 truncate max-w-[240px]">{ws.description}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] font-mono text-zinc-400">
+                          {ws.invoices_count ?? 0} facturas
+                        </span>
+                        {assignTargetWsId === ws.id && <span className="material-symbols-outlined text-[16px] text-white">check</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-dashed border-[#444748]/50">
+              <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#444748]/50">
                 <button
                   type="button"
-                  onClick={() => setShowAssignModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white"
+                  onClick={() => {
+                    setShowAssignModal(false);
+                    setActiveCategory('custom');
+                    setIsCreatingWs(true);
+                  }}
+                  className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
-                  Cancelar
+                  <span className="material-symbols-outlined text-[14px]">add</span>
+                  <span>Nuevo Workspace</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleAssignInvoicesSubmit}
-                  className="px-4 py-1.5 rounded-lg bg-white text-zinc-950 font-semibold text-xs hover:bg-zinc-200"
-                >
-                  Confirmar Asignación
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAssignModal(false)}
+                    className="px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAssignInvoicesSubmit}
+                    disabled={!assignTargetWsId}
+                    className="px-4 py-1.5 rounded-lg bg-white text-zinc-950 font-semibold text-xs hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  >
+                    Confirmar Asignación
+                  </button>
+                </div>
               </div>
             </div>
           </div>

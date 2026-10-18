@@ -141,7 +141,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     }).catch(() => null);
 
     fetchWorkspaces().then(res => {
-      if (res.data) setWorkspaces(res.data);
+      const list = Array.isArray(res.data) ? res.data : (res.data?.workspaces || []);
+      setWorkspaces(list);
     }).catch(() => null);
   }, []);
 
@@ -152,8 +153,9 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
       if (res.data) {
         setCurrentWorkspaceId(updatedVal);
         if (onInvoiceUpdated) onInvoiceUpdated(res.data);
-        const wsObj = workspaces.find(w => w.id === updatedVal);
-        setSaveMessage(`[OK] Asignado a ${wsObj ? wsObj.name : 'sin workspace'}.`);
+        const wsList = Array.isArray(workspaces) ? workspaces : [];
+        const wsObj = wsList.find(w => w.id === updatedVal);
+        setSaveMessage(`[OK] Asignado a ${wsObj ? wsObj.name : 'Bandeja General'}.`);
         setTimeout(() => setSaveMessage(''), 3000);
       }
     } catch (err: any) {
@@ -377,8 +379,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     className="bg-[#201f22] hover:bg-[#252427] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-lg pl-6 pr-7 py-1 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors"
                     title="Asignar factura a un Workspace de Proyecto"
                   >
-                    <option value="">Sin Workspace</option>
-                    {workspaces.map((w) => (
+                    <option value="">Bandeja General (Sin Workspace)</option>
+                    {Array.isArray(workspaces) && workspaces.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
                       </option>
@@ -387,7 +389,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                   <span
                     className="w-2.5 h-2.5 rounded-full absolute left-2 pointer-events-none"
                     style={{
-                      backgroundColor: currentWorkspaceId
+                      backgroundColor: currentWorkspaceId && Array.isArray(workspaces)
                         ? workspaces.find((w) => w.id === currentWorkspaceId)?.color || '#38bdf8'
                         : '#71717a',
                     }}
