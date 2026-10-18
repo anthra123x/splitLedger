@@ -63,11 +63,43 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const [accounts, setAccounts] = useState<any[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(invoice.workspace_id || null);
+  const [previewMode, setPreviewMode] = useState<'document' | 'compact'>('document');
+  const [rawFileText, setRawFileText] = useState<string | null>(null);
+  const [isLoadingRaw, setIsLoadingRaw] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [scanStage, setScanStage] = useState(1);
   const [scanProgress, setScanProgress] = useState(25);
   const [scanStatusText, setScanStatusText] = useState('');
   const [showThinking, setShowThinking] = useState(false);
+
+  const fileExt = (invoice.file_path || invoice.original_name || '').split('.').pop()?.toLowerCase() || '';
+  const isPdf = fileExt === 'pdf' || (invoice.mime_type?.includes('pdf') ?? false);
+  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tiff', 'tif', 'gif'].includes(fileExt) || (invoice.mime_type?.startsWith('image/') ?? false);
+  const isHtml = fileExt === 'html' || fileExt === 'htm' || (invoice.mime_type?.includes('html') ?? false);
+  const isJson = fileExt === 'json' || (invoice.mime_type?.includes('json') ?? false);
+  const isText = ['txt', 'csv', 'tsv', 'xml', 'md', 'log'].includes(fileExt) || (invoice.mime_type?.startsWith('text/') ?? false);
+
+  useEffect(() => {
+    if (invoice.file_path && (isJson || isText)) {
+      setIsLoadingRaw(true);
+      fetch(invoice.file_path)
+        .then((r) => {
+          if (!r.ok) throw new Error('File not found');
+          return r.text();
+        })
+        .then((txt) => {
+          setRawFileText(txt);
+          setIsLoadingRaw(false);
+        })
+        .catch(() => {
+          setRawFileText(null);
+          setIsLoadingRaw(false);
+        });
+    } else {
+      setRawFileText(null);
+      setIsLoadingRaw(false);
+    }
+  }, [invoice.file_path, isJson, isText]);
 
   const handleReScan = () => {
     setIsScanning(true);
@@ -275,6 +307,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const currentItemsTaxSum = items.reduce((acc, it) => acc + (it.tax_amount || 0), 0);
   const currentItemsTotalSum = items.reduce((acc, it) => acc + (it.total_amount || 0), 0);
 
+  const targetSubtotal = invoice.subtotal ?? currentItemsBaseSum;
+  const targetTaxTotal = invoice.tax_total ?? currentItemsTaxSum;
   const targetGrandTotal = invoice.grand_total ?? currentItemsTotalSum;
   const expectedDocSum = (invoice.surcharge_total && Math.abs(currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0) - targetGrandTotal) < 0.05)
     ? currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0)
@@ -410,15 +444,71 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               {/* Document Canvas Header Toolbar */}
               <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 h-14">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#353437] text-white font-mono text-[11px] font-medium border border-dashed border-[#444748]/50">
-                    DOC 1/1
+                  <span className="px-2 py-0.5 rounded bg-[#353437] text-white font-mono text-[11px] font-medium border border-dashed border-[#444748]/50 uppercase">
+                    {fileExt || 'DOC'}
                   </span>
-                  <span className="font-mono text-xs text-[#c4c7c8] truncate max-w-[150px] sm:max-w-[200px]" title={invoice.original_name}>
+                  <span className="font-mono text-xs text-[#c4c7c8] truncate max-w-[130px] sm:max-w-[170px]" title={invoice.original_name}>
                     {invoice.original_name}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* View Mode Toggle */}
+                  <div className="flex items-center bg-[#2a2a2c] rounded-lg p-0.5 border border-dashed border-[#444748]/50">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('document')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                        previewMode === 'document' ? 'bg-[#353437] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title="Ver factura o documento original real"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">description</span>
+                      <span className="hidden sm:inline">Factura Real</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode('compact')}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                        previewMode === 'compact' ? 'bg-[#353437] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title="Ver ficha compacta"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">view_compact</span>
+                      <span className="hidden sm:inline">Ficha</span>
+                    </button>
+                  </div>
+
+                  {/* Zoom Controls (only for images or compact sheet) */}
+                  {(previewMode === 'compact' || isImage) && (
+                    <div className="hidden sm:flex items-center gap-0.5 bg-[#2a2a2c] border border-dashed border-[#444748]/50 rounded p-0.5">
+                      <button
+                        onClick={handleZoomOut}
+                        className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
+                        title="Reducir zoom"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">remove</span>
+                      </button>
+                      <span className="font-mono text-[11px] px-1 text-white select-none">
+                        {zoom}%
+                      </span>
+                      <button
+                        onClick={handleZoomIn}
+                        className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
+                        title="Aumentar zoom"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">add</span>
+                      </button>
+                      <button
+                        onClick={handleZoomFit}
+                        className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors ml-0.5 border-l border-dashed border-[#444748]/40 cursor-pointer"
+                        title="Ajustar vista 100%"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">fit_screen</span>
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     onClick={handleReScan}
                     disabled={isScanning}
@@ -426,38 +516,10 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     title="Re-ejecutar escaneo láser y análisis óptico con SplitLLM"
                   >
                     <span className="material-symbols-outlined text-[15px]">document_scanner</span>
-                    <span className="hidden sm:inline">Escanear</span>
-                  </button>
-
-                  {/* Zoom Controls */}
-                  <div className="flex items-center gap-0.5 bg-[#2a2a2c] border border-dashed border-[#444748]/50 rounded p-0.5">
-                  <button
-                    onClick={handleZoomOut}
-                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
-                    title="Reducir zoom"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">remove</span>
-                  </button>
-                  <span className="font-mono text-xs px-2 text-white select-none font-medium">
-                    {zoom}%
-                  </span>
-                  <button
-                    onClick={handleZoomIn}
-                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
-                    title="Aumentar zoom"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                  </button>
-                  <button
-                    onClick={handleZoomFit}
-                    className="w-7 h-7 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors ml-0.5 border-l border-dashed border-[#444748]/40 cursor-pointer"
-                    title="Ajustar vista 100%"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">fit_screen</span>
+                    <span className="hidden md:inline">Escanear</span>
                   </button>
                 </div>
               </div>
-            </div>
 
               {/* Visual Invoice Sheet or Laser Scanning Animation */}
               {isScanning ? (
@@ -471,238 +533,168 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     onCancel={() => setIsScanning(false)}
                   />
                 </div>
-              ) : (
-                <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/80 p-4 overflow-auto select-none flex justify-center items-start shadow-inner">
-                <div
-                  style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
-                  className="relative w-[420px] bg-[#201f22] rounded-sm border border-dashed border-[#444748]/50 shadow-2xl p-5 flex flex-col justify-between transition-transform duration-150"
-                >
-                  <div className="flex flex-col gap-3">
-                    
-                    {/* Header */}
-                    <div className="flex justify-between items-start pb-2 border-b border-dashed border-[#444748]/40">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono text-white font-bold text-sm tracking-tight">
-                            {invoice.supplier_name}
-                          </span>
-                          {invoice.tax_id_validation && (
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-semibold uppercase ${
-                                invoice.tax_id_validation.is_valid
-                                  ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60'
-                                  : invoice.tax_id_validation.entity_type && invoice.tax_id_validation.entity_type !== 'UNKNOWN' && invoice.tax_id_validation.entity_type !== 'INVALID'
-                                    ? 'bg-amber-950/70 text-amber-300 border border-amber-800/60'
-                                    : 'bg-rose-950/70 text-rose-300 border border-rose-800/60'
-                              }`}
-                              title={invoice.tax_id_validation.diagnostic_message}
-                            >
-                              {invoice.tax_id_validation.is_valid
-                                ? `[NIF OK: ${invoice.tax_id_validation.entity_type}]`
-                                : invoice.tax_id_validation.entity_type && invoice.tax_id_validation.entity_type !== 'UNKNOWN' && invoice.tax_id_validation.entity_type !== 'INVALID'
-                                  ? `[NIF: ${invoice.tax_id_validation.entity_type.replace('PERSONA_FISICA_', '').replace('CIF_', '')}]`
-                                  : '[NIF INVALID]'}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-[#c4c7c8] leading-tight mt-0.5">
-                          {invoice.supplier_address || 'Dirección fiscal registrada'}
+              ) : previewMode === 'document' ? (
+                /* REAL DOCUMENT VIEWER */
+                <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/95 flex flex-col justify-start items-stretch shadow-inner overflow-hidden">
+                  {isPdf && invoice.file_path ? (
+                    <div className="w-full h-full flex-1 min-h-[580px] bg-[#141416] p-1.5 flex flex-col">
+                      <iframe
+                        src={`${invoice.file_path}#toolbar=0&navpanes=0`}
+                        className="w-full flex-1 min-h-[580px] rounded-lg border border-dashed border-[#444748]/50 bg-[#1c1b1d]"
+                        title={`Documento PDF: ${invoice.original_name}`}
+                      />
+                    </div>
+                  ) : isImage && invoice.file_path ? (
+                    <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/90 p-4 overflow-auto select-none flex justify-center items-start shadow-inner">
+                      <img
+                        src={invoice.file_path}
+                        alt={invoice.original_name}
+                        style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
+                        className="max-w-full h-auto object-contain rounded border border-dashed border-[#444748]/50 shadow-2xl transition-transform duration-150"
+                      />
+                    </div>
+                  ) : isHtml && invoice.file_path ? (
+                    <div className="w-full h-full flex-1 min-h-[580px] bg-[#141416] p-1.5 flex flex-col">
+                      <iframe
+                        src={invoice.file_path}
+                        className="w-full flex-1 min-h-[580px] rounded-lg border border-dashed border-[#444748]/50 bg-white"
+                        title={`Documento HTML: ${invoice.original_name}`}
+                      />
+                    </div>
+                  ) : (isJson || isText) && invoice.file_path ? (
+                    <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/95 p-3.5 overflow-auto flex flex-col shadow-inner">
+                      <div className="flex items-center justify-between pb-2 mb-2 border-b border-dashed border-[#444748]/40 text-xs">
+                        <span className="font-mono text-zinc-400 text-[11px] flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                          Contenido Original del Archivo ({fileExt.toUpperCase()})
                         </span>
-                        {(invoice.supplier_postal_code || invoice.supplier_city) && (
-                          <span className="text-[10px] text-zinc-400 font-mono mt-0.5">
-                            {[invoice.supplier_postal_code, invoice.supplier_city].filter(Boolean).join(' ')}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="font-mono text-[10px] text-zinc-400">
-                            NIF/CIF: {invoice.supplier_tax_id || 'B87219034'}
-                          </span>
-                          {(invoice.supplier_email || invoice.supplier_phone) && (
-                            <span className="text-[10px] text-zinc-500 font-mono">
-                              • {[invoice.supplier_email, invoice.supplier_phone].filter(Boolean).join(' • ')}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="w-8 h-8 rounded bg-[#353437] border border-dashed border-[#444748]/50 flex items-center justify-center text-white shrink-0">
-                        <span className="material-symbols-outlined text-[18px]">receipt</span>
-                      </div>
-                    </div>
-
-                    {/* Recipient Box */}
-                    <div className="flex justify-between items-start bg-[#1c1b1d] border border-dashed border-[#444748]/40 p-2.5 rounded">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-semibold">Facturado a</span>
-                        <span className="text-xs text-white font-medium">{invoice.customer_name || 'SplitLedger Engineering Labs S.L.'}</span>
-                        <span className="font-mono text-[10px] text-zinc-400">{invoice.customer_tax_id || 'ESB87219034'}</span>
-                        {invoice.customer_address && (
-                          <span className="text-[10px] text-zinc-400 leading-tight mt-0.5">{invoice.customer_address}</span>
-                        )}
-                        {(invoice.customer_postal_code || invoice.customer_city) && (
-                          <span className="text-[10px] text-zinc-500 font-mono">
-                            {[invoice.customer_postal_code, invoice.customer_city].filter(Boolean).join(' ')}
-                          </span>
-                        )}
-                        {(invoice.customer_email || invoice.customer_phone) && (
-                          <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                            {[invoice.customer_email, invoice.customer_phone].filter(Boolean).join(' • ')}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end shrink-0 pl-2">
-                        <span className="text-xs text-white font-mono font-bold"># {invoice.invoice_number}</span>
-                        <span className="text-[11px] text-zinc-400 font-mono">{invoice.invoice_date}</span>
-                        {invoice.due_date && (
-                          <span className="text-[10px] text-zinc-500 font-mono">Vence: {invoice.due_date}</span>
-                        )}
-                        {invoice.temporal_analysis && (
-                          <div className="mt-1 flex items-center gap-1">
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
-                                invoice.temporal_analysis.is_overdue
-                                  ? 'bg-amber-950/80 text-amber-300 border border-amber-800/70'
-                                  : 'bg-zinc-800 text-zinc-300 border border-zinc-700/50'
-                              }`}
-                              title={invoice.temporal_analysis.diagnostic_message}
-                            >
-                              {invoice.temporal_analysis.is_overdue
-                                ? `VENCIDA +${invoice.temporal_analysis.days_overdue}d`
-                                : `Término: ${invoice.temporal_analysis.payment_terms_days}d`}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Treasury & Payment Details */}
-                    {(invoice.payment_method || invoice.iban) && (
-                      <div className="bg-[#181719] border border-dashed border-[#444748]/40 p-2 rounded flex flex-col gap-1 text-[11px] font-mono">
-                        <div className="flex items-center justify-between text-zinc-400">
-                          <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-sans font-semibold">Forma de Pago</span>
-                          <span className="text-white">{invoice.payment_method || 'Transferencia'}</span>
-                        </div>
-                        {invoice.iban && (
-                          <div className="flex items-center justify-between text-zinc-400">
-                            <span className="text-[9px] text-[#c4c7c8] uppercase tracking-wider font-sans font-semibold">IBAN / Cuenta</span>
-                            <span className="text-white font-mono tracking-wider">{invoice.iban}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* OCR Hotspots / Bounding boxes */}
-                    <div className="mt-2 flex flex-col gap-2">
-                      <div className="text-[10px] text-[#c4c7c8] uppercase tracking-wider flex items-center justify-between pb-1 border-b border-dashed border-[#444748]/30">
-                        <span>Partidas Detectadas por OCR</span>
-                        <span className="font-mono text-white text-[10px]">{items.length} Líneas</span>
-                      </div>
-
-                      {items.map((item, idx) => {
-                        const isHovered = hoveredLineIndex === idx;
-                        return (
-                          <div
-                            key={idx}
-                            onMouseEnter={() => setHoveredLineIndex(idx)}
-                            onMouseLeave={() => setHoveredLineIndex(null)}
-                            className={`relative p-2 rounded transition-all cursor-pointer group ${
-                              isHovered
-                                ? 'bg-[#353437] border-white ring-1 ring-white'
-                                : 'bg-[#1c1b1d] border border-dashed border-[#444748]/40 hover:border-white/50 hover:bg-[#2a2a2c]'
-                            }`}
+                        {rawFileText && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(rawFileText);
+                              setSaveMessage('[OK] Contenido copiado.');
+                              setTimeout(() => setSaveMessage(''), 2000);
+                            }}
+                            className="px-2 py-0.5 rounded bg-[#2a2a2c] hover:bg-[#353437] text-zinc-300 hover:text-white font-mono text-[10px] border border-dashed border-[#444748]/50 transition-colors cursor-pointer"
                           >
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-white font-medium truncate max-w-[240px]">{item.concept}</span>
-                              <span className="font-mono text-white font-semibold">
-                                {(item.base_amount ?? item.total_amount ?? 0).toFixed(2)} €
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono mt-0.5">
-                              <span>
-                                {item.quantity || 1} {item.unit || 'uds'} × {(item.unit_price || item.base_amount || 0).toFixed(2)} €
-                                {item.discount_amount && item.discount_amount > 0 ? ` (-${item.discount_amount.toFixed(2)} €)` : ''}
-                              </span>
-                              <span className="text-zinc-500">
-                                {item.account_code || '628000'} • {item.cost_center || 'DevOps'}
-                              </span>
-                            </div>
-                            <span className="absolute -top-1.5 -right-1 font-mono text-[8px] bg-white text-zinc-950 px-1 rounded-sm opacity-90 shadow font-semibold">
-                              OCR {item.bounding_box?.confidence || 98.8}%
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                  </div>
-
-                  {/* Document Tax Summary */}
-                  <div className="mt-4 pt-2 bg-[#0e0e10] border border-dashed border-[#444748]/40 p-2.5 rounded flex flex-col gap-1">
-                    <div className="flex justify-between text-xs text-zinc-400">
-                      <span>Subtotal (Base Imponible)</span>
-                      <span className="font-mono text-white">{currentItemsBaseSum.toFixed(2)} €</span>
-                    </div>
-
-                    {invoice.tax_breakdown && invoice.tax_breakdown.length > 0 ? (
-                      invoice.tax_breakdown.map((tb, tbIdx) => (
-                        <div key={tbIdx} className="flex flex-col text-[11px] text-zinc-400 border-t border-dashed border-[#444748]/20 pt-1 mt-0.5">
-                          <div className="flex justify-between">
-                            <span>Base {tb.base_amount.toFixed(2)} € @ {tb.tax_rate}% IVA</span>
-                            <span className="font-mono text-white">{tb.tax_amount.toFixed(2)} €</span>
-                          </div>
-                          {tb.surcharge_amount && tb.surcharge_amount > 0 && (
-                            <div className="flex justify-between text-zinc-400">
-                              <span>Recargo Eq. ({tb.surcharge_rate || 5.2}%)</span>
-                              <span className="font-mono text-amber-300">+{tb.surcharge_amount.toFixed(2)} €</span>
-                            </div>
-                          )}
+                            Copiar
+                          </button>
+                        )}
+                      </div>
+                      {isLoadingRaw ? (
+                        <div className="flex items-center justify-center flex-1 text-zinc-500 text-xs font-mono">
+                          Cargando documento original...
                         </div>
-                      ))
-                    ) : (
-                      <div className="flex justify-between text-xs text-zinc-400 mt-0.5">
-                        <span>IVA Total ({items[0]?.tax_rate || 21}%)</span>
-                        <span className="font-mono text-white">{currentItemsTaxSum.toFixed(2)} €</span>
+                      ) : rawFileText ? (
+                        <pre className="p-3 rounded-lg bg-[#141416] border border-dashed border-[#444748]/40 font-mono text-[11px] text-zinc-300 leading-relaxed overflow-x-auto whitespace-pre selection:bg-white/20">
+                          {rawFileText}
+                        </pre>
+                      ) : (
+                        <div className="flex items-center justify-center flex-1 text-zinc-500 text-xs font-mono">
+                          Documento fuente no disponible en disco.
+                        </div>
+                      )}
+                    </div>
+                  ) : invoice.file_path ? (
+                    <div className="w-full h-full flex-1 min-h-[580px] bg-[#141416] p-2 flex flex-col">
+                      <iframe
+                        src={invoice.file_path}
+                        className="w-full flex-1 min-h-[580px] rounded-lg border border-dashed border-[#444748]/50 bg-[#1c1b1d]"
+                        title={invoice.original_name}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center flex-1 min-h-[580px] text-zinc-500 text-xs font-mono gap-2">
+                      <span className="material-symbols-outlined text-[32px] text-zinc-600">visibility_off</span>
+                      <span>No hay archivo físico asociado para previsualización directa.</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* STREAMLINED COMPACT SUMMARY CARD */
+                <div className="relative flex-1 min-h-[580px] bg-[#0e0e10]/80 p-5 overflow-auto flex justify-center items-start shadow-inner">
+                  <div
+                    style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
+                    className="w-full max-w-[440px] bg-[#1c1b1d] rounded-xl border border-dashed border-[#444748]/60 p-5 shadow-2xl flex flex-col gap-4 transition-transform duration-150"
+                  >
+                    {/* Compact Header */}
+                    <div className="flex items-start justify-between pb-3 border-b border-dashed border-[#444748]/40">
+                      <div className="flex flex-col min-w-0 pr-3">
+                        <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">Emisor</span>
+                        <h3 className="text-sm font-bold text-white tracking-tight truncate" title={invoice.supplier_name}>
+                          {invoice.supplier_name}
+                        </h3>
+                        <span className="font-mono text-xs text-zinc-400 mt-0.5">NIF: {invoice.supplier_tax_id || '-'}</span>
+                        {invoice.supplier_address && (
+                          <span className="text-[11px] text-zinc-500 truncate max-w-[260px]">{invoice.supplier_address}</span>
+                        )}
                       </div>
-                    )}
-
-                    {Boolean((!invoice.tax_breakdown || invoice.tax_breakdown.length === 0) && (invoice.surcharge_total ?? 0) > 0) && (
-                      <div className="flex justify-between text-xs text-zinc-400">
-                        <span>Recargo de Equivalencia (R.E.)</span>
-                        <span className="font-mono text-amber-300">+{(invoice.surcharge_total || 0).toFixed(2)} €</span>
+                      <div className="text-right flex flex-col items-end shrink-0">
+                        <span className="font-mono text-xs font-bold text-white"># {invoice.invoice_number}</span>
+                        <span className="font-mono text-[11px] text-zinc-400">{invoice.invoice_date}</span>
+                        {invoice.due_date && (
+                          <span className="font-mono text-[10px] text-zinc-500">Vence: {invoice.due_date}</span>
+                        )}
                       </div>
-                    )}
-
-                    {Boolean((invoice.retention_total ?? 0) > 0) && (
-                      <div className="flex justify-between text-xs text-zinc-400">
-                        <span>Retención IRPF</span>
-                        <span className="font-mono text-rose-300">-{(invoice.retention_total || 0).toFixed(2)} €</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between text-xs font-semibold text-white mt-1.5 pt-1.5 border-t border-dashed border-[#444748]/40">
-                      <span>Total Liquidación ({invoice.currency || 'EUR'})</span>
-                      <span className="font-mono text-sm text-white font-bold">{targetGrandTotal.toFixed(2)} {invoice.currency || '€'}</span>
                     </div>
 
-                    {invoice.currency_conversion?.is_foreign && (
-                      <div className="flex justify-between text-xs font-mono text-amber-300 mt-1 pt-1 border-t border-dashed border-[#444748]/20">
-                        <span>Equivalente PGC (EUR)</span>
-                        <span className="font-bold">{invoice.currency_conversion.converted_total_eur.toFixed(2)} €</span>
+                    {/* Compact Recipient */}
+                    <div className="p-2.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/40 flex items-center justify-between text-xs">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] uppercase font-semibold text-zinc-400">Cliente / Receptor</span>
+                        <span className="text-white font-medium truncate">{invoice.customer_name || 'SplitLedger Labs S.L.'}</span>
                       </div>
-                    )}
-                  </div>
+                      <span className="font-mono text-[11px] text-zinc-400 shrink-0 pl-2">{invoice.customer_tax_id || 'ESB87219034'}</span>
+                    </div>
 
+                    {/* Partidas Count */}
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/40 text-xs">
+                      <span className="text-zinc-300 font-medium">Partidas desglosadas</span>
+                      <span className="font-mono text-white font-bold">{items.length} partidas</span>
+                    </div>
+
+                    {/* Compact Totals Box */}
+                    <div className="p-3 rounded-lg bg-[#141416] border border-dashed border-[#444748]/50 flex flex-col gap-1.5 text-xs font-mono">
+                      <div className="flex justify-between text-zinc-400">
+                        <span>Base Imponible</span>
+                        <span className="text-zinc-200">{targetSubtotal.toFixed(2)} €</span>
+                      </div>
+                      <div className="flex justify-between text-zinc-400">
+                        <span>IVA / Impuestos</span>
+                        <span className="text-zinc-200">{targetTaxTotal.toFixed(2)} €</span>
+                      </div>
+                      {Boolean((invoice.surcharge_total ?? 0) > 0) && (
+                        <div className="flex justify-between text-zinc-400">
+                          <span>Recargo Eq.</span>
+                          <span className="text-amber-300">+{(invoice.surcharge_total || 0).toFixed(2)} €</span>
+                        </div>
+                      )}
+                      {Boolean((invoice.retention_total ?? 0) > 0) && (
+                        <div className="flex justify-between text-zinc-400">
+                          <span>Retención IRPF</span>
+                          <span className="text-rose-300">-{(invoice.retention_total || 0).toFixed(2)} €</span>
+                        </div>
+                      )}
+                      <div className="pt-2 border-t border-dashed border-[#444748]/40 flex justify-between items-center text-sm font-bold text-white">
+                        <span className="font-sans">Total Liquidación</span>
+                        <span className="text-base text-white">{targetGrandTotal.toFixed(2)} {invoice.currency || '€'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Document Canvas Status Footer */}
               <div className="flex items-center justify-between text-zinc-400 text-xs px-3 py-2 bg-[#201f22]/90 border-t border-dashed border-[#444748]/40 h-10">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span className="text-xs text-zinc-300">Inspección 2D completada</span>
+                  <span className="text-xs text-zinc-300">
+                    {previewMode === 'document' ? 'Visualizando factura real' : 'Ficha sintética compacta'}
+                  </span>
                 </div>
                 <span className="font-mono text-[11px] text-zinc-400">
-                  Precisión {((invoice.confidence_score || 0.988) * 100).toFixed(1)}% • 300 DPI
+                  {fileExt.toUpperCase()} • Precisión {((invoice.confidence_score || 0.988) * 100).toFixed(1)}%
                 </span>
               </div>
 

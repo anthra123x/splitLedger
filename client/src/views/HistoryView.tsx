@@ -372,20 +372,23 @@ export default function HistoryView({
           >
             {inv.invoice_number || 'S/N'}
           </td>
-          <td className="px-4 py-3.5" onClick={() => onSelectInvoice(inv)}>
-            <div className="flex flex-col min-w-[190px]">
-              <span className="font-medium text-white tracking-tight">{inv.supplier_name}</span>
+          <td className="px-4 py-3" onClick={() => onSelectInvoice(inv)}>
+            <div className="flex flex-col min-w-[180px]">
+              <span className="font-medium text-white tracking-tight truncate max-w-[240px]" title={inv.supplier_name}>
+                {inv.supplier_name}
+              </span>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[11px] text-zinc-400 font-mono">
+                <span className="text-[11px] text-zinc-400 font-mono shrink-0">
                   NIF: {inv.supplier_tax_id || 'N/D'}
                 </span>
                 {assignedWs && (
                   <span
-                    className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-medium border border-white/10"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border border-white/10 max-w-[150px] truncate"
                     style={{ backgroundColor: `${assignedWs.color || '#ffffff'}15`, color: assignedWs.color || '#ffffff' }}
+                    title={assignedWs.name}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: assignedWs.color || '#ffffff' }}></span>
-                    <span>{assignedWs.name}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: assignedWs.color || '#ffffff' }}></span>
+                    <span className="truncate">{assignedWs.name}</span>
                   </span>
                 )}
               </div>

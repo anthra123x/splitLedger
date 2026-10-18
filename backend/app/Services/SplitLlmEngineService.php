@@ -22,6 +22,14 @@ class SplitLlmEngineService
             }
         }
 
+        // 2. Structured JSON Invoice Fast-Path
+        if (!$extracted && JsonInvoiceParserService::isJsonInvoice($rawText)) {
+            $parsedJson = JsonInvoiceParserService::parse($rawText, $filename);
+            if ($parsedJson && !empty($parsedJson['items'])) {
+                $extracted = $parsedJson;
+            }
+        }
+
         // 2. High-Speed SplitReasoner Cognitive Engine (Python FastAPI on port 8100)
         $aiEngineUrl = env('AI_ENGINE_URL', 'http://127.0.0.1:8100');
         if (!$extracted && !empty($aiEngineUrl)) {
