@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   getExportCsvUrl,
   getExportZipUrl,
@@ -89,6 +90,17 @@ export default function HistoryView({
   useEffect(() => {
     loadCustomWorkspaces();
   }, []);
+
+  useEffect(() => {
+    if (!showAssignModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowAssignModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAssignModal]);
 
   // 1. Group invoices into Day Workspaces based on processing date (created_at)
   const dailyWorkspaces = useMemo<DayWorkspace[]>(() => {
@@ -1064,9 +1076,15 @@ export default function HistoryView({
         </div>
 
         {/* BULK / SINGLE ASSIGN MODAL */}
-        {showAssignModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-            <div className="w-full max-w-md bg-[#1c1b1d] border border-dashed border-[#444748] rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+        {showAssignModal && typeof document !== 'undefined' && createPortal(
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+            onClick={() => setShowAssignModal(false)}
+          >
+            <div
+              className="w-full max-w-md bg-[#1c1b1d] border border-dashed border-[#444748] rounded-2xl p-5 shadow-2xl flex flex-col gap-4 animate-pop-in"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between pb-2 border-b border-dashed border-[#444748]/50">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-white text-[20px]">drive_file_move</span>
@@ -1077,7 +1095,7 @@ export default function HistoryView({
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
-                  className="text-zinc-400 hover:text-white"
+                  className="text-zinc-400 hover:text-white transition-colors"
                 >
                   <span className="material-symbols-outlined text-[18px]">close</span>
                 </button>
@@ -1178,7 +1196,8 @@ export default function HistoryView({
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* WORKSPACES DISPLAY */}
