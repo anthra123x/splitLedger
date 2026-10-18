@@ -167,3 +167,44 @@ export interface AccountingAccount {
   code: string;
   name: string;
 }
+
+export interface GoogleIntegrationStatus {
+  is_connected: boolean;
+  account_email?: string | null;
+  account_name?: string | null;
+  connected_at?: string | null;
+  scopes?: string[];
+  services: {
+    drive: {
+      enabled: boolean;
+      folder_name: string;
+      folder_id: string;
+      folder_url?: string;
+      auto_sync: boolean;
+      last_sync?: string | null;
+      synced_files_count: number;
+    };
+    sheets: {
+      enabled: boolean;
+      sheet_name: string;
+      sheet_id: string;
+      sheet_url: string;
+      auto_export: boolean;
+      last_sync?: string | null;
+      synced_rows_count: number;
+    };
+    gmail: {
+      enabled: boolean;
+      query: string;
+      polling_interval_minutes: number;
+      last_scan?: string | null;
+      detected_invoices_count: number;
+    };
+    oauth: {
+      client_configured: boolean;
+      sso_enabled: boolean;
+      token_type?: string;
+      expires_in?: number;
+    };
+  };
+}

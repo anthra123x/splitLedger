@@ -6,6 +6,7 @@ use App\Http\Controllers\AgentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\GoogleIntegrationController;
 use Illuminate\Support\Facades\Route;
 
 // Health Check
@@ -65,4 +66,14 @@ Route::get('/user/profile', [ProfileController::class, 'show']);
 
 // AI Copilot Agent Chat
 Route::post('/agent/chat', [AgentController::class, 'chat']);
+
+// Google Cloud & Workspace Integrations
+Route::prefix('integrations/google')->group(function () {
+    Route::get('/status', [GoogleIntegrationController::class, 'status']);
+    Route::post('/connect', [GoogleIntegrationController::class, 'connect']);
+    Route::post('/disconnect', [GoogleIntegrationController::class, 'disconnect']);
+    Route::post('/drive/sync', [GoogleIntegrationController::class, 'syncDrive']);
+    Route::post('/sheets/sync', [GoogleIntegrationController::class, 'syncSheets']);
+    Route::post('/gmail/fetch', [GoogleIntegrationController::class, 'fetchGmail']);
+});
 

@@ -1,4 +1,4 @@
-import { Invoice, SystemMetrics, EngineStats, Workspace } from '../types/index.js';
+import { Invoice, SystemMetrics, EngineStats, Workspace, GoogleIntegrationStatus } from '../types/index.js';
 
 const API_BASE = '/api';
 
@@ -500,6 +500,60 @@ export async function logoutUser(): Promise<void> {
   } finally {
     clearStoredAuth();
   }
+}
+
+// ==========================================
+// Google Cloud & Workspace Integrations API
+// ==========================================
+
+export async function fetchGoogleIntegrationStatus(): Promise<{ status: string; data: GoogleIntegrationStatus }> {
+  const res = await fetch(`${API_BASE}/integrations/google/status`);
+  if (!res.ok) throw new Error('Error al consultar estado de integraciones de Google');
+  return res.json();
+}
+
+export async function connectGoogleIntegration(data?: { email?: string; name?: string }): Promise<{ status: string; data: GoogleIntegrationStatus; message?: string }> {
+  const res = await fetch(`${API_BASE}/integrations/google/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data || {})
+  });
+  if (!res.ok) throw new Error('Error al conectar con Google Workspace');
+  return res.json();
+}
+
+export async function disconnectGoogleIntegration(): Promise<{ status: string; data: GoogleIntegrationStatus; message?: string }> {
+  const res = await fetch(`${API_BASE}/integrations/google/disconnect`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error('Error al desvincular cuenta de Google');
+  return res.json();
+}
+
+export async function syncGoogleDrive(invoiceIds?: string[]): Promise<{ status: string; message: string; folder_url?: string; files_synced?: number }> {
+  const res = await fetch(`${API_BASE}/integrations/google/drive/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invoice_ids: invoiceIds || [] })
+  });
+  if (!res.ok) throw new Error('Error al sincronizar con Google Drive');
+  return res.json();
+}
+
+export async function syncGoogleSheets(): Promise<{ status: string; message: string; sheet_url: string; rows_synced?: number }> {
+  const res = await fetch(`${API_BASE}/integrations/google/sheets/sync`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error('Error al sincronizar con Google Sheets');
+  return res.json();
+}
+
+export async function fetchGmailInvoices(): Promise<{ status: string; message: string; new_invoices_found?: number }> {
+  const res = await fetch(`${API_BASE}/integrations/google/gmail/fetch`, {
+    method: 'POST'
+  });
+  if (!res.ok) throw new Error('Error al comprobar facturas en Gmail');
+  return res.json();
 }
 
 

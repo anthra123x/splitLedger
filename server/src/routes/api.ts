@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import { config } from '../config/env.js';
 import { InvoiceController } from '../controllers/InvoiceController.js';
 import { MetricsController } from '../controllers/MetricsController.js';
+import { GoogleIntegrationController } from '../controllers/GoogleIntegrationController.js';
 
 const router = express.Router();
 
@@ -62,5 +63,13 @@ router.get('/engine/status', InvoiceController.getEngineStats);
 
 // Metrics
 router.get('/metrics', MetricsController.getSummary);
+
+// Google Cloud & Workspace Integrations
+router.get('/integrations/google/status', GoogleIntegrationController.getStatus);
+router.post('/integrations/google/connect', GoogleIntegrationController.connect);
+router.post('/integrations/google/disconnect', GoogleIntegrationController.disconnect);
+router.post('/integrations/google/drive/sync', GoogleIntegrationController.syncDrive);
+router.post('/integrations/google/sheets/sync', GoogleIntegrationController.syncSheets);
+router.post('/integrations/google/gmail/fetch', GoogleIntegrationController.fetchGmail);
 
 export default router;

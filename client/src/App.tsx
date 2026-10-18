@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import CommandMenuModal from './components/CommandMenuModal';
+import GoogleIntegrationsModal from './components/GoogleIntegrationsModal';
 import UploadView from './views/UploadView';
 import DetailView from './views/DetailView';
 import HistoryView from './views/HistoryView';
@@ -18,6 +19,7 @@ export default function App() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [metrics, setMetrics] = useState<SystemMetrics>({});
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState<boolean>(false);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<Array<{ title: string; detail: string }>>([
     { title: 'Motor OCR v2.4 Activo', detail: 'Conexión con OpenRouter y aceleración local establecida' },
@@ -109,6 +111,9 @@ export default function App() {
     if (action === 'export:csv') {
       window.location.href = getExportCsvUrl();
     }
+    if (action === 'open:google-integrations') {
+      setIsGoogleModalOpen(true);
+    }
     if (action.startsWith('invoice:')) {
       const id = action.replace('invoice:', '');
       const found = invoices.find((i) => i.id === id);
@@ -144,6 +149,7 @@ export default function App() {
           setPreviousView(currentView);
           setCurrentView('auth');
         }}
+        onOpenGoogleIntegrations={() => setIsGoogleModalOpen(true)}
         notifications={notifications}
       />
 
@@ -205,6 +211,19 @@ export default function App() {
         onClose={setIsCommandMenuOpen}
         onSelectAction={handleCommandAction}
         invoices={invoices}
+      />
+
+      {/* Google Cloud & Workspace Integrations Modal */}
+      <GoogleIntegrationsModal
+        isOpen={isGoogleModalOpen}
+        onClose={() => setIsGoogleModalOpen(false)}
+        onSuccessMessage={(msg) => {
+          setNotifications((prev) => [
+            { title: 'Google Workspace', detail: msg },
+            ...prev
+          ]);
+          loadData();
+        }}
       />
     </div>
   );
