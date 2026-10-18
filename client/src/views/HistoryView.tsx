@@ -11,6 +11,7 @@ import {
 } from '../services/api';
 import { exportInvoicePdf, exportWorkspacePdf } from '../services/pdfExportService';
 import { Invoice, SystemMetrics, Workspace } from '../types/index.js';
+import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
 interface HistoryViewProps {
   invoices?: Invoice[];
@@ -395,12 +396,12 @@ export default function HistoryView({
           </td>
           <td className="px-4 py-3" onClick={() => onSelectInvoice(inv)}>
             <div className="flex flex-col min-w-[180px]">
-              <span className="font-medium text-white tracking-tight truncate max-w-[240px]" title={inv.supplier_name}>
-                {inv.supplier_name}
+              <span className="font-medium text-white tracking-tight truncate max-w-[240px]" title={cleanSupplierName(inv.supplier_name)}>
+                {cleanSupplierName(inv.supplier_name)}
               </span>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[11px] text-zinc-400 font-mono shrink-0">
-                  NIF: {inv.supplier_tax_id || 'N/D'}
+                  NIF: {cleanSupplierTaxId(inv.supplier_name, inv.supplier_tax_id) || 'N/D'}
                 </span>
                 {assignedWs ? (
                   <button

@@ -3,6 +3,7 @@ import { updateInvoice, fetchAccountingRules, fetchWorkspaces } from '../service
 import { exportInvoicePdf } from '../services/pdfExportService';
 import { Invoice, InvoiceItem, Workspace } from '../types/index.js';
 import ScanningAnimationCard from '../components/ScanningAnimationCard';
+import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
 const DEFAULT_PGC_ACCOUNTS = [
   { code: '600000', name: 'Compras de Mercaderías y Hardware', group: 'Grupo 60 - Compras' },
@@ -111,8 +112,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     }
   }, [rawFileText]);
 
-  const docSupplierName = parsedJson?.issuer?.company_name || invoice.supplier_name || 'Proveedor General';
-  const docSupplierTaxId = parsedJson?.issuer?.tax_id || invoice.supplier_tax_id || '';
+  const docSupplierName = cleanSupplierName(parsedJson?.issuer?.company_name || invoice.supplier_name);
+  const docSupplierTaxId = cleanSupplierTaxId(invoice.supplier_name, parsedJson?.issuer?.tax_id || invoice.supplier_tax_id);
   const docSupplierAddress = parsedJson?.issuer?.address || invoice.supplier_address || (parsedJson?.issuer?.country ? `Domicilio Fiscal (${parsedJson.issuer.country})` : 'Domicilio Fiscal España');
   const docCustomerName = parsedJson?.recipient?.company_name || invoice.customer_name || 'SplitLedger Labs S.L.';
   const docCustomerTaxId = parsedJson?.recipient?.tax_id || invoice.customer_tax_id || 'ESB87219034';
@@ -412,7 +413,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
 
               <div className="flex items-center gap-2.5 truncate">
                 <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
-                  {invoice.supplier_name}
+                  {cleanSupplierName(invoice.supplier_name)}
                 </h1>
                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0">
                   {invoice.invoice_number}
@@ -843,10 +844,10 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     <div className="flex items-start justify-between pb-3 border-b border-dashed border-[#444748]/40">
                       <div className="flex flex-col min-w-0 pr-3">
                         <span className="text-[10px] uppercase font-semibold text-zinc-400 tracking-wider">Emisor</span>
-                        <h3 className="text-sm font-bold text-white tracking-tight truncate" title={invoice.supplier_name}>
-                          {invoice.supplier_name}
+                        <h3 className="text-sm font-bold text-white tracking-tight truncate" title={cleanSupplierName(invoice.supplier_name)}>
+                          {cleanSupplierName(invoice.supplier_name)}
                         </h3>
-                        <span className="font-mono text-xs text-zinc-400 mt-0.5">NIF: {invoice.supplier_tax_id || '-'}</span>
+                        <span className="font-mono text-xs text-zinc-400 mt-0.5">NIF: {cleanSupplierTaxId(invoice.supplier_name, invoice.supplier_tax_id) || '-'}</span>
                         {invoice.supplier_address && (
                           <span className="text-[11px] text-zinc-500 truncate max-w-[260px]">{invoice.supplier_address}</span>
                         )}
@@ -970,8 +971,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-[#181719] border-b border-dashed border-[#444748]/40 text-xs">
                 <div className="flex flex-col">
                   <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Emisor / NIF</span>
-                  <span className="text-white font-medium truncate" title={invoice.supplier_name}>{invoice.supplier_name}</span>
-                  <span className="text-[11px] font-mono text-zinc-400">{invoice.supplier_tax_id || '-'}</span>
+                  <span className="text-white font-medium truncate" title={cleanSupplierName(invoice.supplier_name)}>{cleanSupplierName(invoice.supplier_name)}</span>
+                  <span className="text-[11px] font-mono text-zinc-400">{cleanSupplierTaxId(invoice.supplier_name, invoice.supplier_tax_id) || '-'}</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] text-[#c4c7c8] uppercase font-semibold">Cliente / Receptor</span>

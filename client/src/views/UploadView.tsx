@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { uploadInvoice, uploadInvoicesBatch, uploadInvoicesStream } from '../services/api';
 import { Invoice } from '../types/index.js';
 import ScanningAnimationCard from '../components/ScanningAnimationCard';
+import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
 interface UploadViewProps {
   invoices: Invoice[];
@@ -224,11 +225,11 @@ export default function UploadView({ invoices = [], onSelectInvoice, onInvoiceUp
             </div>
 
             <h2 className="text-xl sm:text-2xl font-semibold text-zinc-100 tracking-tight">
-              Arrastra cualquier formato de factura o documento aquí
+              Arrastra cualquier factura o documento aquí
             </h2>
 
-            <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-md mx-auto leading-relaxed">
-              Motor universal: Lotes comprimidos (ZIP con múltiples facturas), PDF (vectorial o escaneo OCR), hojas de cálculo (Excel XLSX/XLS), facturación electrónica Facturae XML/UBL, tablas CSV/TSV/JSON, HTML e imágenes (PNG/JPG/WEBP).
+            <p className="text-xs sm:text-sm text-zinc-400 mt-1.5 max-w-lg mx-auto">
+              Compatible con PDF, ZIP (lotes), Excel, XML Facturae, tablas CSV/TSV e imágenes (PNG/JPG).
             </p>
 
             <div className="mt-6 flex items-center justify-center">
@@ -275,49 +276,67 @@ export default function UploadView({ invoices = [], onSelectInvoice, onInvoiceUp
           <div className="rounded-2xl border border-dashed border-[#444748]/50 bg-zinc-950/75 backdrop-blur-md divide-y divide-dashed divide-[#444748]/30 overflow-hidden shadow-sm">
             {filteredInvoices.map((inv) => {
               const isAnalyzed = inv.status === 'analyzed' || inv.status === 'reconciled';
+              const cleanSupplier = cleanSupplierName(inv.supplier_name);
+              const cleanTaxId = cleanSupplierTaxId(inv.supplier_name, inv.supplier_tax_id);
+              const itemCount = inv.items_count || inv.items?.length || 1;
+
               return (
                 <div
                   key={inv.id}
                   onClick={() => onSelectInvoice(inv)}
-                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-900/40 transition-colors group cursor-pointer"
+                  className="px-4 py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-zinc-900/40 transition-colors group cursor-pointer"
                 >
-                  <div className="flex items-start sm:items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-dashed border-[#444748]/50 flex items-center justify-center text-zinc-300 shrink-0 group-hover:border-zinc-500 transition-colors">
-                      <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-dashed border-[#444748]/60 flex items-center justify-center text-zinc-400 shrink-0 group-hover:text-zinc-200 group-hover:border-zinc-400 transition-colors">
+                      <span className="material-symbols-outlined text-[17px]">receipt_long</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-zinc-100">{inv.invoice_number}</span>
-                        <span className="text-zinc-500">•</span>
-                        <span className="text-sm text-zinc-300 font-medium">{inv.supplier_name}</span>
-                        {inv.supplier_tax_id && (
-                          <span className="text-xs text-zinc-500 font-mono">(NIF: {inv.supplier_tax_id})</span>
+
+                    <div className="min-w-0 flex-1">
+                      {/* Titulo compacto: Codigo Factura + Proveedor limpio */}
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="font-mono text-xs font-semibold text-zinc-100 shrink-0">
+                          {inv.invoice_number || 'S/N'}
+                        </span>
+                        <span className="text-zinc-600 text-xs shrink-0">•</span>
+                        <span className="text-xs sm:text-sm font-medium text-zinc-200 truncate" title={cleanSupplier}>
+                          {cleanSupplier}
+                        </span>
+                      </div>
+
+                      {/* Metadatos secundarios limpios y sin sobrecarga */}
+                      <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-0.5 truncate">
+                        {cleanTaxId && (
+                          <span className="font-mono">NIF: {cleanTaxId}</span>
+                        )}
+                        {cleanTaxId && <span className="text-zinc-600">•</span>}
+                        <span>
+                          {itemCount} {itemCount === 1 ? 'partida' : 'partidas'}
+                        </span>
+                        {inv.invoice_date && (
+                          <>
+                            <span className="text-zinc-600">•</span>
+                            <span className="font-mono text-zinc-500">{inv.invoice_date}</span>
+                          </>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-400 mt-1">
-                        {inv.items_count || inv.items?.length || 1} partida{(inv.items_count || inv.items?.length || 1) === 1 ? '' : 's'} desglosada{(inv.items_count || inv.items?.length || 1) === 1 ? '' : 's'}
-                        {inv.customer_name ? ` • Facturado a ${inv.customer_name}` : ''}
-                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-5 pl-14 sm:pl-0">
+                  {/* Lado derecho: Importe sintetizado, Badge y Boton */}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pl-11 sm:pl-0 shrink-0">
                     <div className="text-right">
-                      <div className="text-sm font-medium text-zinc-100 font-mono">
+                      <div className="text-xs sm:text-sm font-semibold text-zinc-100 font-mono">
                         {(inv.grand_total || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        Base: {(inv.subtotal || 0).toFixed(2)} € + IVA
                       </div>
                     </div>
 
                     {isAnalyzed ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-950/40 text-emerald-300 border border-emerald-800/40">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-950/40 text-emerald-300 border border-emerald-800/40">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                         Desglosada
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-800/80 text-zinc-300 border border-zinc-700/50">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-zinc-800/80 text-zinc-300 border border-zinc-700/50">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                         En proceso
                       </span>
@@ -329,10 +348,10 @@ export default function UploadView({ invoices = [], onSelectInvoice, onInvoiceUp
                         e.stopPropagation();
                         onSelectInvoice(inv);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2a2a2c] hover:bg-[#353437] text-white text-xs font-medium border border-dashed border-[#444748]/50 transition-all cursor-pointer group/btn active:scale-95 shadow-sm"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#2a2a2c] hover:bg-[#353437] text-white text-xs font-medium border border-dashed border-[#444748]/50 transition-all cursor-pointer group/btn active:scale-95 shadow-sm"
                     >
                       <span>Ver desglose</span>
-                      <span className="material-symbols-outlined text-[16px] group-hover/btn:translate-x-0.5 transition-transform">arrow_forward</span>
+                      <span className="material-symbols-outlined text-[15px] group-hover/btn:translate-x-0.5 transition-transform">arrow_forward</span>
                     </button>
                   </div>
                 </div>

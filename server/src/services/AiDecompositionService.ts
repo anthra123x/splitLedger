@@ -318,6 +318,15 @@ Reglas críticas:
       supplierName = headerLine || originalName.replace(/\.[^/.]+$/, '').replace(/[_\-]/g, ' ');
     }
 
+    if (supplierName) {
+      supplierName = supplierName
+        .replace(/^(proveedor|emisor|supplier|issuer)[\s:|.\t-]+/i, '')
+        .replace(/[\s|,\t-]+(?:nif|cif|vat|tax\s*id|id)[\s:|.\t-]+[A-Z0-9-]+$/i, '')
+        .replace(/\s*\((?:nif|cif|vat|tax\s*id)[\s:|.\t-]*[A-Z0-9-]+\)/gi, '')
+        .replace(/^[\s|:\-_]+|[\s|:\-_]+$/g, '')
+        .trim();
+    }
+
     // 7. Extract Multi-Line Table Items
     const skipPatterns = [
       'total', 'subtotal', 'base imponible', 'base iva', 'cuota iva', 'total cuota', 'cuota:',
