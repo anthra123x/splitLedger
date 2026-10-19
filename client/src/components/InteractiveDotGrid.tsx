@@ -99,43 +99,38 @@ export default function InteractiveDotGrid({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Batch 1: Standard resting dots (intensity <= 0.05)
-      ctx.beginPath();
-      for (let i = 0; i < dots.length; i++) {
+      const pathRest = new Path2D();
+      const pathWave = new Path2D();
+      const pathCrest = new Path2D();
+      const twoPi = Math.PI * 2;
+      const len = dots.length;
+
+      for (let i = 0; i < len; i++) {
         const d = dots[i];
-        if (d.intensity <= 0.05) {
-          ctx.moveTo(d.x + dotRadius, d.y);
-          ctx.arc(d.x, d.y, dotRadius, 0, Math.PI * 2);
+        const intensity = d.intensity;
+
+        if (intensity <= 0.05) {
+          pathRest.moveTo(d.x + dotRadius, d.y);
+          pathRest.arc(d.x, d.y, dotRadius, 0, twoPi);
+        } else if (intensity <= 0.35) {
+          const r = dotRadius + intensity * 0.6;
+          pathWave.moveTo(d.x + r, d.y);
+          pathWave.arc(d.x, d.y, r, 0, twoPi);
+        } else {
+          const r = dotRadius + intensity * 1.1;
+          pathCrest.moveTo(d.x + r, d.y);
+          pathCrest.arc(d.x, d.y, r, 0, twoPi);
         }
       }
+
       ctx.fillStyle = 'rgba(255, 255, 255, 0.20)';
-      ctx.fill();
+      ctx.fill(pathRest);
 
-      // Batch 2: Ambient wave glow dots (0.05 < intensity <= 0.35)
-      ctx.beginPath();
-      for (let i = 0; i < dots.length; i++) {
-        const d = dots[i];
-        if (d.intensity > 0.05 && d.intensity <= 0.35) {
-          const r = dotRadius + d.intensity * 0.6;
-          ctx.moveTo(d.x + r, d.y);
-          ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-        }
-      }
       ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
-      ctx.fill();
+      ctx.fill(pathWave);
 
-      // Batch 3: Active crest & cursor interaction dots (intensity > 0.35)
-      ctx.beginPath();
-      for (let i = 0; i < dots.length; i++) {
-        const d = dots[i];
-        if (d.intensity > 0.35) {
-          const r = dotRadius + d.intensity * 1.1;
-          ctx.moveTo(d.x + r, d.y);
-          ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-        }
-      }
       ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
-      ctx.fill();
+      ctx.fill(pathCrest);
     };
 
     const updateDots = () => {
@@ -146,8 +141,10 @@ export default function InteractiveDotGrid({
       mouse.y += (mouse.targetY - mouse.y) * 0.22;
 
       let maxDelta = 0;
+      const radiusSq = interactionRadius * interactionRadius;
+      const len = dots.length;
 
-      for (let i = 0; i < dots.length; i++) {
+      for (let i = 0; i < len; i++) {
         const d = dots[i];
 
         // Autonomous harmonic wave calculations
@@ -165,7 +162,7 @@ export default function InteractiveDotGrid({
           autoIntensity = Math.max(0, (combinedWave + 0.3) * 0.45);
         }
 
-        // Cursor repulsion and interaction calculations
+        // Bounding-box filtered cursor interaction to avoid expensive square root calls
         let mouseDispX = 0;
         let mouseDispY = 0;
         let mouseIntensity = 0;
@@ -173,15 +170,18 @@ export default function InteractiveDotGrid({
         if (mouse.active) {
           const dx = mouse.x - d.baseX;
           const dy = mouse.y - d.baseY;
-          const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < interactionRadius && dist > 0.001) {
-            const factor = 1 - dist / interactionRadius;
-            const push = Math.sin(factor * Math.PI * 0.5) * maxDisplacement;
-            const angle = Math.atan2(dy, dx);
-            mouseDispX = -Math.cos(angle) * push;
-            mouseDispY = -Math.sin(angle) * push;
-            mouseIntensity = factor;
+          if (Math.abs(dx) < interactionRadius && Math.abs(dy) < interactionRadius) {
+            const distSq = dx * dx + dy * dy;
+            if (distSq < radiusSq && distSq > 0.0001) {
+              const dist = Math.sqrt(distSq);
+              const factor = 1 - dist / interactionRadius;
+              const push = Math.sin(factor * Math.PI * 0.5) * maxDisplacement;
+              const angle = Math.atan2(dy, dx);
+              mouseDispX = -Math.cos(angle) * push;
+              mouseDispY = -Math.sin(angle) * push;
+              mouseIntensity = factor;
+            }
           }
         }
 
@@ -243,6 +243,15 @@ export default function InteractiveDotGrid({
       startLoop();
     };
 
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animationFrameId);
+        isRunning = false;
+      } else {
+        startLoop();
+      }
+    };
+
     let resizeTimer: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       clearTimeout(resizeTimer);
@@ -255,6 +264,7 @@ export default function InteractiveDotGrid({
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerleave', handlePointerLeave, { passive: true });
     window.addEventListener('resize', handleResize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     buildGrid();
 
@@ -262,6 +272,7 @@ export default function InteractiveDotGrid({
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerleave', handlePointerLeave);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       cancelAnimationFrame(animationFrameId);
     };
   }, [spacing, dotRadius, interactionRadius, maxDisplacement, autonomous]);

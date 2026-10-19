@@ -36,10 +36,23 @@ export async function fetchInvoices({ search = '', status = '', workspace_id = '
   return res.json();
 }
 
+const invoiceCache = new Map<string, { data: Invoice; timestamp: number }>();
+const CACHE_TTL_MS = 60000; // 60s in-memory cache for instant navigation
+
 export async function fetchInvoiceById(id: string): Promise<{ status: string; data: Invoice }> {
+  const cached = invoiceCache.get(id);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+    return { status: 'success', data: cached.data };
+  }
+
   const res = await fetch(`${API_BASE}/invoices/${id}`);
   if (!res.ok) throw new Error('Factura no encontrada');
-  return res.json();
+  const data = await res.json();
+  if (data?.data) {
+    invoiceCache.set(id, { data: data.data, timestamp: now });
+  }
+  return data;
 }
 
 export async function uploadInvoice(file: File): Promise<{ status: string; data: Invoice; meta?: any }> {
@@ -56,7 +69,11 @@ export async function uploadInvoice(file: File): Promise<{ status: string; data:
     throw new Error(errorData.error || 'Error al procesar y descomponer la factura');
   }
 
-  return res.json();
+  const json = await res.json();
+  if (json?.data?.id) {
+    invoiceCache.set(json.data.id, { data: json.data, timestamp: Date.now() });
+  }
+  return json;
 }
 
 export async function uploadInvoicesBatch(files: File[] | FileList): Promise<{ status: string; data: Invoice | Invoice[]; count?: number; meta?: any }> {
@@ -86,10 +103,15 @@ export async function updateInvoice(id: string, data: Partial<Invoice>): Promise
   });
 
   if (!res.ok) throw new Error('Error al actualizar la factura');
-  return res.json();
+  const result = await res.json();
+  if (result?.data) {
+    invoiceCache.set(id, { data: result.data, timestamp: Date.now() });
+  }
+  return result;
 }
 
 export async function deleteInvoice(id: string): Promise<{ status: string; message: string }> {
+  invoiceCache.delete(id);
   const res = await fetch(`${API_BASE}/invoices/${id}`, {
     method: 'DELETE'
   });
@@ -104,10 +126,18 @@ export async function fetchMetrics(): Promise<{ status: string; data: SystemMetr
   return res.json();
 }
 
+let rulesCache: { data: { accounts: any[]; cost_centers: string[] }; timestamp: number } | null = null;
 export async function fetchAccountingRules(): Promise<{ status: string; data: { accounts: any[]; cost_centers: string[] } }> {
+  if (rulesCache && Date.now() - rulesCache.timestamp < 300000) {
+    return { status: 'success', data: rulesCache.data };
+  }
   const res = await fetch(`${API_BASE}/invoices/rules`);
   if (!res.ok) throw new Error('Error al obtener reglas contables');
-  return res.json();
+  const json = await res.json();
+  if (json?.data) {
+    rulesCache = { data: json.data, timestamp: Date.now() };
+  }
+  return json;
 }
 
 export async function fetchEngineStats(): Promise<{ status: string; data: EngineStats }> {

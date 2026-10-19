@@ -1,16 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense, useCallback } from 'react';
 import Navbar from './components/Navbar';
-import CommandMenuModal from './components/CommandMenuModal';
-import GoogleIntegrationsModal from './components/GoogleIntegrationsModal';
-import UploadView from './views/UploadView';
-import DetailView from './views/DetailView';
-import HistoryView from './views/HistoryView';
-import AuthView from './views/AuthView';
+import InteractiveDotGrid from './components/InteractiveDotGrid';
 import { fetchInvoices, fetchInvoiceById, fetchMetrics, getExportCsvUrl, getStoredAuth } from './services/api';
 import { Invoice, SystemMetrics } from './types';
 
-import FloatingAiChat from './components/FloatingAiChat';
-import InteractiveDotGrid from './components/InteractiveDotGrid';
+// Code-split dynamic views and modals for optimal bundle size and responsive navigation
+const UploadView = lazy(() => import('./views/UploadView'));
+const DetailView = lazy(() => import('./views/DetailView'));
+const HistoryView = lazy(() => import('./views/HistoryView'));
+const AuthView = lazy(() => import('./views/AuthView'));
+const CommandMenuModal = lazy(() => import('./components/CommandMenuModal'));
+const GoogleIntegrationsModal = lazy(() => import('./components/GoogleIntegrationsModal'));
+const FloatingAiChat = lazy(() => import('./components/FloatingAiChat'));
+
+function ViewFallback() {
+  return (
+    <div className="flex-1 w-full flex items-center justify-center min-h-[50vh]">
+      <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#1c1b1d]/80 border border-dashed border-[#444748]/50 text-xs font-mono text-[#c4c7c8] shadow-sm">
+        <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <span>Cargando interfaz...</span>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history' | 'auth'>(() => {
@@ -29,31 +41,42 @@ export default function App() {
     { title: 'Asientos iniciales cargados', detail: 'Partidas de AWS, Telefónica y GCP listas para auditoría' }
   ]);
 
-  // Load initial data
-  const loadData = async () => {
+  // Parallelized initial data loading with auth protection
+  const loadData = useCallback(async () => {
     try {
-      const invRes = await fetchInvoices();
-      if (invRes.data?.invoices) {
+      const [invRes, metRes] = await Promise.all([
+        fetchInvoices().catch((err) => {
+          console.warn('[Data] Invoices fetch deferred:', err);
+          return null;
+        }),
+        fetchMetrics().catch((err) => {
+          console.warn('[Data] Metrics fetch deferred:', err);
+          return null;
+        })
+      ]);
+
+      if (invRes?.data?.invoices) {
         setInvoices(invRes.data.invoices);
-        // By default select first invoice if none selected
         if (!selectedInvoice && invRes.data.invoices.length > 0) {
           fetchInvoiceById(invRes.data.invoices[0].id).then((r) => {
-            if (r.data) setSelectedInvoice(r.data);
+            if (r?.data) setSelectedInvoice(r.data);
           });
         }
       }
-      const metRes = await fetchMetrics();
-      if (metRes.data) {
+      if (metRes?.data) {
         setMetrics(metRes.data);
       }
     } catch (err) {
       console.error('Error cargando datos de SplitLedger:', err);
     }
-  };
+  }, [selectedInvoice]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const auth = getStoredAuth();
+    if (auth?.user && currentView !== 'auth') {
+      loadData();
+    }
+  }, [currentView, loadData]);
 
   // View navigation helper
   const handleSelectInvoice = async (inv: Invoice, fromView?: 'upload' | 'history') => {
@@ -126,16 +149,17 @@ export default function App() {
 
   if (currentView === 'auth') {
     return (
-      <AuthView
-        onAuthSuccess={(user) => {
-          setNotifications((prev) => [
-            { title: `Sesión iniciada: ${user.name}`, detail: `Autenticado como ${user.role} (${user.email})` },
-            ...prev
-          ]);
-          loadData();
-          setCurrentView(previousView || 'upload');
-        }}
-      />
+      <Suspense fallback={<ViewFallback />}>
+        <AuthView
+          onAuthSuccess={(user) => {
+            setNotifications((prev) => [
+              { title: `Sesión iniciada: ${user.name}`, detail: `Autenticado como ${user.role} (${user.email})` },
+              ...prev
+            ]);
+            setCurrentView(previousView || 'upload');
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -157,77 +181,81 @@ export default function App() {
       />
 
       <div className="relative z-10 flex-1 w-full flex flex-col">
-        {currentView === 'upload' && (
-          <div key="view-upload" className="animate-page-enter w-full">
-            <UploadView
-              invoices={invoices}
-              onSelectInvoice={(inv) => handleSelectInvoice(inv, 'upload')}
-              onInvoiceUploaded={handleInvoiceUploaded}
-              onGoToHistory={() => setCurrentView('history')}
-            />
-          </div>
-        )}
+        <Suspense fallback={<ViewFallback />}>
+          {currentView === 'upload' && (
+            <div key="view-upload" className="animate-page-enter w-full">
+              <UploadView
+                invoices={invoices}
+                onSelectInvoice={(inv) => handleSelectInvoice(inv, 'upload')}
+                onInvoiceUploaded={handleInvoiceUploaded}
+                onGoToHistory={() => setCurrentView('history')}
+              />
+            </div>
+          )}
 
-        {currentView === 'detail' && (
-          <div key={`view-detail-${selectedInvoice?.id || 'empty'}`} className="animate-page-enter w-full">
-            <DetailView
-              invoice={selectedInvoice}
-              onInvoiceUpdated={handleInvoiceUpdated}
-              onBack={() => setCurrentView(previousView)}
-              backLabel={previousView === 'history' ? 'Volver al Historial' : 'Volver a Carga'}
-            />
-          </div>
-        )}
+          {currentView === 'detail' && (
+            <div key={`view-detail-${selectedInvoice?.id || 'empty'}`} className="animate-page-enter w-full">
+              <DetailView
+                invoice={selectedInvoice}
+                onInvoiceUpdated={handleInvoiceUpdated}
+                onBack={() => setCurrentView(previousView)}
+                backLabel={previousView === 'history' ? 'Volver al Historial' : 'Volver a Carga'}
+              />
+            </div>
+          )}
 
-        {currentView === 'history' && (
-          <div key="view-history" className="animate-page-enter w-full">
-            <HistoryView
-              invoices={invoices}
-              metrics={metrics}
-              onSelectInvoice={(inv) => handleSelectInvoice(inv, 'history')}
-              onInvoiceDeleted={handleInvoiceDeleted}
-              onInvoicesUpdated={loadData}
-            />
-          </div>
-        )}
+          {currentView === 'history' && (
+            <div key="view-history" className="animate-page-enter w-full">
+              <HistoryView
+                invoices={invoices}
+                metrics={metrics}
+                onSelectInvoice={(inv) => handleSelectInvoice(inv, 'history')}
+                onInvoiceDeleted={handleInvoiceDeleted}
+                onInvoicesUpdated={loadData}
+              />
+            </div>
+          )}
+        </Suspense>
       </div>
 
-      {/* Floating AI Copilot Chat */}
-      <FloatingAiChat
-        isOpen={isChatOpen}
-        setIsOpen={setIsChatOpen}
-        onNavigate={(view) => setCurrentView(view)}
-        onSelectInvoiceById={(id) => {
-          const inv = invoices.find((i) => i.id === id);
-          if (inv) {
-            handleSelectInvoice(inv);
-          } else {
-            fetchInvoiceById(id).then((r) => {
-              if (r.data) handleSelectInvoice(r.data);
-            });
-          }
-        }}
-      />
+      <Suspense fallback={null}>
+        {/* Floating AI Copilot Chat */}
+        <FloatingAiChat
+          isOpen={isChatOpen}
+          setIsOpen={setIsChatOpen}
+          onNavigate={(view) => setCurrentView(view)}
+          onSelectInvoiceById={(id) => {
+            const inv = invoices.find((i) => i.id === id);
+            if (inv) {
+              handleSelectInvoice(inv);
+            } else {
+              fetchInvoiceById(id).then((r) => {
+                if (r.data) handleSelectInvoice(r.data);
+              });
+            }
+          }}
+        />
 
-      <CommandMenuModal
-        isOpen={isCommandMenuOpen}
-        onClose={setIsCommandMenuOpen}
-        onSelectAction={handleCommandAction}
-        invoices={invoices}
-      />
+        <CommandMenuModal
+          isOpen={isCommandMenuOpen}
+          onClose={setIsCommandMenuOpen}
+          onSelectAction={handleCommandAction}
+          invoices={invoices}
+        />
 
-      {/* Google Cloud & Workspace Integrations Modal */}
-      <GoogleIntegrationsModal
-        isOpen={isGoogleModalOpen}
-        onClose={() => setIsGoogleModalOpen(false)}
-        onSuccessMessage={(msg) => {
-          setNotifications((prev) => [
-            { title: 'Google Workspace', detail: msg },
-            ...prev
-          ]);
-          loadData();
-        }}
-      />
+        {/* Google Cloud & Workspace Integrations Modal */}
+        <GoogleIntegrationsModal
+          isOpen={isGoogleModalOpen}
+          onClose={() => setIsGoogleModalOpen(false)}
+          onSuccessMessage={(msg) => {
+            setNotifications((prev) => [
+              { title: 'Google Workspace', detail: msg },
+              ...prev
+            ]);
+            loadData();
+          }}
+        />
+      </Suspense>
     </div>
   );
 }

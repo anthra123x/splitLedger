@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -167,6 +168,9 @@ class WorkspaceController extends Controller
 
         $workspace->delete();
 
+        Cache::forget('invoices_index_default_v2');
+        Cache::forget('metrics_summary_v2');
+
         return response()->json([
             'status' => 'success',
             'message' => 'Workspace eliminado. Las facturas han sido devueltas a la bandeja general.'
@@ -205,6 +209,9 @@ class WorkspaceController extends Controller
         }
 
         $affected = Invoice::whereIn('id', $ids)->update(['workspace_id' => $targetWorkspaceId]);
+
+        Cache::forget('invoices_index_default_v2');
+        Cache::forget('metrics_summary_v2');
 
         return response()->json([
             'status' => 'success',

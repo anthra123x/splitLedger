@@ -10,6 +10,7 @@ use App\Services\OcrService;
 use App\Services\SplitLlmEngineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -20,9 +21,36 @@ use ZipArchive;
 
 class InvoiceController extends Controller
 {
+    private function invalidateCaches(): void
+    {
+        Cache::forget('invoices_index_default_v2');
+        Cache::forget('metrics_summary_v2');
+    }
+
     public function index(Request $request): JsonResponse
     {
-        $query = Invoice::withCount('items')->with('workspace')->orderBy('created_at', 'desc');
+        $isDefaultQuery = !$request->filled('search') &&
+            (!$request->filled('status') || in_array($request->input('status'), ['Todas', 'all'])) &&
+            !$request->filled('workspace_id') &&
+            intval($request->input('page', 1)) === 1;
+
+        if ($isDefaultQuery) {
+            $cached = Cache::get('invoices_index_default_v2');
+            if ($cached) {
+                return response()->json($cached);
+            }
+        }
+
+        $query = Invoice::select([
+            'id', 'invoice_number', 'supplier_name', 'supplier_tax_id', 'customer_name',
+            'customer_tax_id', 'invoice_date', 'due_date', 'currency', 'subtotal',
+            'tax_total', 'retention_total', 'grand_total', 'status', 'confidence_score',
+            'created_at', 'updated_at', 'filename', 'original_name', 'file_path',
+            'mime_type', 'file_size', 'workspace_id'
+        ])
+        ->with('workspace:id,name,color')
+        ->withCount('items')
+        ->orderBy('created_at', 'desc');
 
         if ($request->filled('search')) {
             $search = '%' . $request->input('search') . '%';
@@ -56,7 +84,7 @@ class InvoiceController extends Controller
         $limit = min(100, max(1, intval($request->input('limit', 50))));
         $paginated = $query->paginate($limit);
 
-        return response()->json([
+        $payload = [
             'status' => 'success',
             'data' => [
                 'invoices' => $paginated->items(),
@@ -67,7 +95,13 @@ class InvoiceController extends Controller
                     'totalPages' => $paginated->lastPage(),
                 ]
             ]
-        ]);
+        ];
+
+        if ($isDefaultQuery) {
+            Cache::put('invoices_index_default_v2', $payload, 30);
+        }
+
+        return response()->json($payload);
     }
 
     public function show(string $id): JsonResponse
@@ -167,6 +201,8 @@ class InvoiceController extends Controller
                 'message' => 'No se encontraron facturas válidas o compatibles en los archivos proporcionados.'
             ], 422);
         }
+
+        $this->invalidateCaches();
 
         if (count($processedInvoices) === 1) {
             return response()->json([
@@ -362,6 +398,8 @@ class InvoiceController extends Controller
                     }
                 }
 
+                $this->invalidateCaches();
+
                 $sendEvent('complete', [
                     'total' => $totalItems,
                     'processedCount' => count($processedList),
@@ -446,6 +484,8 @@ class InvoiceController extends Controller
             }
         });
 
+        $this->invalidateCaches();
+
         return response()->json([
             'status' => 'success',
             'data' => $this->enrichInvoiceData($invoice->fresh()->load('items')),
@@ -465,6 +505,8 @@ class InvoiceController extends Controller
             $invoice->items()->delete();
             $invoice->delete();
         });
+
+        $this->invalidateCaches();
 
         return response()->json([
             'status' => 'success',
