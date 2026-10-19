@@ -23,7 +23,7 @@ class InvoiceController extends Controller
 {
     private function invalidateCaches(): void
     {
-        Cache::forget('invoices_index_default_v2');
+        Cache::forget('invoices_index_default_v3');
         Cache::forget('metrics_summary_v2');
     }
 
@@ -35,7 +35,7 @@ class InvoiceController extends Controller
             intval($request->input('page', 1)) === 1;
 
         if ($isDefaultQuery) {
-            $cached = Cache::get('invoices_index_default_v2');
+            $cached = Cache::get('invoices_index_default_v3');
             if ($cached) {
                 return response()->json($cached);
             }
@@ -84,10 +84,16 @@ class InvoiceController extends Controller
         $limit = min(100, max(1, intval($request->input('limit', 50))));
         $paginated = $query->paginate($limit);
 
+        $invoicesArray = array_map(function ($inv) {
+            $arr = $inv->toArray();
+            $arr['items_count'] = $inv->items_count ?? ($inv->items ? count($inv->items) : 1);
+            return $arr;
+        }, $paginated->items());
+
         $payload = [
             'status' => 'success',
             'data' => [
-                'invoices' => $paginated->items(),
+                'invoices' => $invoicesArray,
                 'pagination' => [
                     'page' => $paginated->currentPage(),
                     'limit' => $paginated->perPage(),
@@ -98,7 +104,7 @@ class InvoiceController extends Controller
         ];
 
         if ($isDefaultQuery) {
-            Cache::put('invoices_index_default_v2', $payload, 30);
+            Cache::put('invoices_index_default_v3', $payload, 30);
         }
 
         return response()->json($payload);

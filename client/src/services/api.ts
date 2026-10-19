@@ -49,7 +49,7 @@ export async function fetchInvoiceById(id: string): Promise<{ status: string; da
   const res = await fetch(`${API_BASE}/invoices/${id}`);
   if (!res.ok) throw new Error('Factura no encontrada');
   const data = await res.json();
-  if (data?.data) {
+  if (data?.data && data.data.id && data.data.status) {
     invoiceCache.set(id, { data: data.data, timestamp: now });
   }
   return data;

@@ -168,7 +168,7 @@ class WorkspaceController extends Controller
 
         $workspace->delete();
 
-        Cache::forget('invoices_index_default_v2');
+        Cache::forget('invoices_index_default_v3');
         Cache::forget('metrics_summary_v2');
 
         return response()->json([
@@ -210,7 +210,7 @@ class WorkspaceController extends Controller
 
         $affected = Invoice::whereIn('id', $ids)->update(['workspace_id' => $targetWorkspaceId]);
 
-        Cache::forget('invoices_index_default_v2');
+        Cache::forget('invoices_index_default_v3');
         Cache::forget('metrics_summary_v2');
 
         return response()->json([
