@@ -6,12 +6,12 @@
   "description": "SplitLedger - Plataforma Inteligente de Descomposición y Conciliación Forense de Facturas con IA (TypeScript)",
   "scripts": {
     "dev": "node scripts/dev.js",
-    "dev:backend": "cd backend && php artisan serve --port=8000",
+    "dev:backend": "cd backend && php artisan serve --port=8001",
     "dev:client": "cd client && npm run dev",
     "dev:ai": "cd ai_engine && uv run uvicorn app.main:app --port 8100 --reload",
     "build:client": "cd client && npm run build",
     "build": "npm run build:client",
-    "start": "cd backend && php artisan serve --port=8000"
+    "start": "cd backend && php artisan serve --port=8001"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",

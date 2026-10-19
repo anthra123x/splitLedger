@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
 
-console.log('\x1b[36m%s\x1b[0m', '[START] Iniciando SplitLedger: Laravel (8000) + React/TS (5173) + Split-Reasoner AI Engine (8100)...');
+console.log('\x1b[36m%s\x1b[0m', '[START] Iniciando SplitLedger: Laravel (8001) + React/TS (5173) + Split-Reasoner AI Engine (8100)...');
 
 // Start Split-Reasoner Python AI Engine
 const aiEngine = spawn('uv', ['run', 'uvicorn', 'app.main:app', '--port=8100', '--reload'], {
@@ -16,7 +16,7 @@ const aiEngine = spawn('uv', ['run', 'uvicorn', 'app.main:app', '--port=8100', '
 });
 
 // Start Laravel backend
-const backend = spawn('php', ['artisan', 'serve', '--port=8000'], {
+const backend = spawn('php', ['artisan', 'serve', '--port=8001'], {
   cwd: path.join(rootDir, 'backend'),
   stdio: 'inherit',
   shell: true,
