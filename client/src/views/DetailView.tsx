@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { updateInvoice, fetchAccountingRules, fetchWorkspaces } from '../services/api';
 import { exportInvoicePdf } from '../services/pdfExportService';
 import { Invoice, InvoiceItem, Workspace } from '../types/index.js';
@@ -38,32 +38,14 @@ interface DetailViewProps {
 }
 
 export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabel }: DetailViewProps) {
-  if (!invoice) {
-    return (
-      <div className="w-full pt-32 pb-20 text-center min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center animate-page-enter">
-        <span className="material-symbols-outlined text-[48px] text-zinc-600 mb-4 animate-pulse">description</span>
-        <h2 className="text-xl font-semibold text-white">No hay ninguna factura seleccionada</h2>
-        <p className="text-zinc-400 text-sm mt-1 max-w-sm">
-          Sube una factura en "Inicio & Carga" o haz clic en "Ver desglose" desde el Historial.
-        </p>
-        <button
-          onClick={onBack}
-          className="mt-6 px-5 py-2.5 rounded-full bg-white text-zinc-950 font-medium text-xs hover:bg-zinc-200 transition-all cursor-pointer active:scale-95 shadow-lg"
-        >
-          {backLabel || 'Volver al Inicio'}
-        </button>
-      </div>
-    );
-  }
-
-  const [items, setItems] = useState<InvoiceItem[]>(invoice.items || []);
+  const [items, setItems] = useState<InvoiceItem[]>(() => invoice?.items || []);
   const [zoom, setZoom] = useState(100);
   const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(invoice.workspace_id || null);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(() => invoice?.workspace_id || null);
   const [previewMode, setPreviewMode] = useState<'document' | 'compact' | 'raw'>('document');
   const [rawFileText, setRawFileText] = useState<string | null>(null);
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
@@ -73,15 +55,30 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const [scanStatusText, setScanStatusText] = useState('');
   const [showThinking, setShowThinking] = useState(false);
 
-  const fileExt = (invoice.file_path || invoice.original_name || '').split('.').pop()?.toLowerCase() || '';
-  const isPdf = fileExt === 'pdf' || (invoice.mime_type?.includes('pdf') ?? false);
-  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tiff', 'tif', 'gif'].includes(fileExt) || (invoice.mime_type?.startsWith('image/') ?? false);
-  const isHtml = fileExt === 'html' || fileExt === 'htm' || (invoice.mime_type?.includes('html') ?? false);
-  const isJson = fileExt === 'json' || (invoice.mime_type?.includes('json') ?? false);
-  const isText = ['txt', 'csv', 'tsv', 'xml', 'md', 'log'].includes(fileExt) || (invoice.mime_type?.startsWith('text/') ?? false);
+  // Financial sums from current items
+  const currentItemsBaseSum = items.reduce((acc, it) => acc + (it.base_amount || 0), 0);
+  const currentItemsTaxSum = items.reduce((acc, it) => acc + (it.tax_amount || 0), 0);
+  const currentItemsTotalSum = items.reduce((acc, it) => acc + (it.total_amount || 0), 0);
+
+  const targetSubtotal = invoice?.subtotal ?? currentItemsBaseSum;
+  const targetTaxTotal = invoice?.tax_total ?? currentItemsTaxSum;
+  const targetGrandTotal = invoice?.grand_total ?? currentItemsTotalSum;
+  const expectedDocSum = (invoice?.surcharge_total && Math.abs(currentItemsBaseSum + (invoice?.surcharge_total || 0) - (invoice?.retention_total || 0) - targetGrandTotal) < 0.05)
+    ? currentItemsBaseSum + (invoice?.surcharge_total || 0) - (invoice?.retention_total || 0)
+    : currentItemsBaseSum + currentItemsTaxSum + (invoice?.surcharge_total || 0) - (invoice?.retention_total || 0);
+
+  const discrepancy = Math.abs(expectedDocSum - targetGrandTotal);
+  const isBalanced = discrepancy < 0.05;
+
+  const fileExt = (invoice?.file_path || invoice?.original_name || '').split('.').pop()?.toLowerCase() || '';
+  const isPdf = fileExt === 'pdf' || (invoice?.mime_type?.includes('pdf') ?? false);
+  const isImage = ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tiff', 'tif', 'gif'].includes(fileExt) || (invoice?.mime_type?.startsWith('image/') ?? false);
+  const isHtml = fileExt === 'html' || fileExt === 'htm' || (invoice?.mime_type?.includes('html') ?? false);
+  const isJson = fileExt === 'json' || (invoice?.mime_type?.includes('json') ?? false);
+  const isText = ['txt', 'csv', 'tsv', 'xml', 'md', 'log'].includes(fileExt) || (invoice?.mime_type?.startsWith('text/') ?? false);
 
   useEffect(() => {
-    if (invoice.file_path && (isJson || isText)) {
+    if (invoice?.file_path && (isJson || isText)) {
       setIsLoadingRaw(true);
       fetch(invoice.file_path)
         .then((r) => {
@@ -100,7 +97,25 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
       setRawFileText(null);
       setIsLoadingRaw(false);
     }
-  }, [invoice.file_path, isJson, isText]);
+  }, [invoice?.file_path, isJson, isText]);
+
+  useEffect(() => {
+    setItems(invoice?.items || []);
+    setCurrentWorkspaceId(invoice?.workspace_id || null);
+  }, [invoice]);
+
+  useEffect(() => {
+    fetchAccountingRules().then(res => {
+      if (res.data && res.data.accounts && res.data.accounts.length > 0) {
+        setAccounts(res.data.accounts);
+      }
+    }).catch(() => null);
+
+    fetchWorkspaces().then(res => {
+      const list = Array.isArray(res.data) ? res.data : (res.data?.workspaces || []);
+      setWorkspaces(list);
+    }).catch(() => null);
+  }, []);
 
   // Parse structured data from source JSON if present
   const parsedJson = useMemo(() => {
@@ -112,16 +127,16 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     }
   }, [rawFileText]);
 
-  const docSupplierName = cleanSupplierName(parsedJson?.issuer?.company_name || invoice.supplier_name);
-  const docSupplierTaxId = cleanSupplierTaxId(invoice.supplier_name, parsedJson?.issuer?.tax_id || invoice.supplier_tax_id);
-  const docSupplierAddress = parsedJson?.issuer?.address || invoice.supplier_address || (parsedJson?.issuer?.country ? `Domicilio Fiscal (${parsedJson.issuer.country})` : 'Domicilio Fiscal España');
-  const docCustomerName = parsedJson?.recipient?.company_name || invoice.customer_name || 'SplitLedger Labs S.L.';
-  const docCustomerTaxId = parsedJson?.recipient?.tax_id || invoice.customer_tax_id || 'ESB87219034';
-  const docCustomerAddress = parsedJson?.recipient?.address || invoice.customer_address || 'Paseo de la Castellana 95, 28046 Madrid, España';
-  const docInvoiceNumber = parsedJson?.header?.invoice_number || invoice.invoice_number || 'S/N';
-  const docIssueDate = parsedJson?.header?.issue_date || invoice.invoice_date || '-';
-  const docDueDate = parsedJson?.header?.due_date || invoice.due_date || '';
-  const docCurrency = parsedJson?.header?.currency || invoice.currency || 'EUR';
+  const docSupplierName = cleanSupplierName(parsedJson?.issuer?.company_name || invoice?.supplier_name || '');
+  const docSupplierTaxId = cleanSupplierTaxId(invoice?.supplier_name || '', parsedJson?.issuer?.tax_id || invoice?.supplier_tax_id);
+  const docSupplierAddress = parsedJson?.issuer?.address || invoice?.supplier_address || (parsedJson?.issuer?.country ? `Domicilio Fiscal (${parsedJson.issuer.country})` : 'Domicilio Fiscal España');
+  const docCustomerName = parsedJson?.recipient?.company_name || invoice?.customer_name || 'SplitLedger Labs S.L.';
+  const docCustomerTaxId = parsedJson?.recipient?.tax_id || invoice?.customer_tax_id || 'ESB87219034';
+  const docCustomerAddress = parsedJson?.recipient?.address || invoice?.customer_address || 'Paseo de la Castellana 95, 28046 Madrid, España';
+  const docInvoiceNumber = parsedJson?.header?.invoice_number || invoice?.invoice_number || 'S/N';
+  const docIssueDate = parsedJson?.header?.issue_date || invoice?.invoice_date || '-';
+  const docDueDate = parsedJson?.header?.due_date || invoice?.due_date || '';
+  const docCurrency = parsedJson?.header?.currency || invoice?.currency || 'EUR';
 
   const docSubtotal = typeof parsedJson?.financial_summary?.subtotal_amount === 'number'
     ? parsedJson.financial_summary.subtotal_amount
@@ -131,7 +146,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     : targetTaxTotal;
   const docRetention = typeof parsedJson?.financial_summary?.retention_amount === 'number'
     ? parsedJson.financial_summary.retention_amount
-    : (invoice.retention_total || 0);
+    : (invoice?.retention_total || 0);
   const docGrandTotal = typeof parsedJson?.financial_summary?.grand_total_amount === 'number'
     ? parsedJson.financial_summary.grand_total_amount
     : targetGrandTotal;
@@ -152,6 +167,25 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     }
     return [];
   }, [items, parsedJson]);
+
+  // Empty state fallback when no invoice is selected
+  if (!invoice) {
+    return (
+      <div className="w-full pt-32 pb-20 text-center min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center animate-page-enter">
+        <span className="material-symbols-outlined text-[48px] text-zinc-600 mb-4 animate-pulse">description</span>
+        <h2 className="text-xl font-semibold text-white">No hay ninguna factura seleccionada</h2>
+        <p className="text-zinc-400 text-sm mt-1 max-w-sm">
+          Sube una factura en "Inicio & Carga" o haz clic en "Ver desglose" desde el Historial.
+        </p>
+        <button
+          onClick={onBack}
+          className="mt-6 px-5 py-2.5 rounded-full bg-white text-zinc-950 font-medium text-xs hover:bg-zinc-200 transition-all cursor-pointer active:scale-95 shadow-lg"
+        >
+          {backLabel || 'Volver al Inicio'}
+        </button>
+      </div>
+    );
+  }
 
   const handleReScan = () => {
     setIsScanning(true);
@@ -180,23 +214,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     }, 2600);
   };
 
-  useEffect(() => {
-    setItems(invoice.items || []);
-    setCurrentWorkspaceId(invoice.workspace_id || null);
-  }, [invoice]);
 
-  useEffect(() => {
-    fetchAccountingRules().then(res => {
-      if (res.data && res.data.accounts && res.data.accounts.length > 0) {
-        setAccounts(res.data.accounts);
-      }
-    }).catch(() => null);
-
-    fetchWorkspaces().then(res => {
-      const list = Array.isArray(res.data) ? res.data : (res.data?.workspaces || []);
-      setWorkspaces(list);
-    }).catch(() => null);
-  }, []);
 
   const handleWorkspaceChange = async (targetWsId: string) => {
     try {
@@ -357,19 +375,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     setItems([...items, newItem]);
   };
 
-  const currentItemsBaseSum = items.reduce((acc, it) => acc + (it.base_amount || 0), 0);
-  const currentItemsTaxSum = items.reduce((acc, it) => acc + (it.tax_amount || 0), 0);
-  const currentItemsTotalSum = items.reduce((acc, it) => acc + (it.total_amount || 0), 0);
 
-  const targetSubtotal = invoice.subtotal ?? currentItemsBaseSum;
-  const targetTaxTotal = invoice.tax_total ?? currentItemsTaxSum;
-  const targetGrandTotal = invoice.grand_total ?? currentItemsTotalSum;
-  const expectedDocSum = (invoice.surcharge_total && Math.abs(currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0) - targetGrandTotal) < 0.05)
-    ? currentItemsBaseSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0)
-    : currentItemsBaseSum + currentItemsTaxSum + (invoice.surcharge_total || 0) - (invoice.retention_total || 0);
-
-  const discrepancy = Math.abs(expectedDocSum - targetGrandTotal);
-  const isBalanced = discrepancy < 0.05;
 
   const handleSaveAndReconcile = async () => {
     setIsSaving(true);

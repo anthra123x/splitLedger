@@ -24,6 +24,59 @@ function ViewFallback() {
   );
 }
 
+interface ErrorBoundaryProps {
+  children: React.ReactNode;
+  onReset?: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[SplitLedger UI Error Caught]:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 w-full flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+          <div className="p-6 rounded-2xl bg-[#1c1b1d] border border-dashed border-[#444748] max-w-md w-full shadow-2xl">
+            <h3 className="text-base font-semibold text-white mb-2">Error al mostrar el desglose</h3>
+            <p className="text-xs text-[#c4c7c8] font-mono mb-4 break-words">
+              {this.state.error?.message || 'Se produjo un error al procesar las partidas de la factura.'}
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false });
+                  if (this.props.onReset) this.props.onReset();
+                }}
+                className="px-4 py-2 rounded-xl bg-white text-zinc-950 text-xs font-medium hover:bg-zinc-200 transition-all cursor-pointer"
+              >
+                Volver a Bandeja General
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history' | 'auth'>(() => {
     const auth = getStoredAuth();
@@ -181,41 +234,43 @@ export default function App() {
       />
 
       <div className="relative z-10 flex-1 w-full flex flex-col">
-        <Suspense fallback={<ViewFallback />}>
-          {currentView === 'upload' && (
-            <div key="view-upload" className="animate-page-enter w-full">
-              <UploadView
-                invoices={invoices}
-                onSelectInvoice={(inv) => handleSelectInvoice(inv, 'upload')}
-                onInvoiceUploaded={handleInvoiceUploaded}
-                onGoToHistory={() => setCurrentView('history')}
-              />
-            </div>
-          )}
+        <ErrorBoundary onReset={() => setCurrentView('upload')}>
+          <Suspense fallback={<ViewFallback />}>
+            {currentView === 'upload' && (
+              <div key="view-upload" className="animate-page-enter w-full">
+                <UploadView
+                  invoices={invoices}
+                  onSelectInvoice={(inv) => handleSelectInvoice(inv, 'upload')}
+                  onInvoiceUploaded={handleInvoiceUploaded}
+                  onGoToHistory={() => setCurrentView('history')}
+                />
+              </div>
+            )}
 
-          {currentView === 'detail' && (
-            <div key={`view-detail-${selectedInvoice?.id || 'empty'}`} className="animate-page-enter w-full">
-              <DetailView
-                invoice={selectedInvoice}
-                onInvoiceUpdated={handleInvoiceUpdated}
-                onBack={() => setCurrentView(previousView)}
-                backLabel={previousView === 'history' ? 'Volver al Historial' : 'Volver a Carga'}
-              />
-            </div>
-          )}
+            {currentView === 'detail' && (
+              <div key={`view-detail-${selectedInvoice?.id || 'empty'}`} className="animate-page-enter w-full">
+                <DetailView
+                  invoice={selectedInvoice}
+                  onInvoiceUpdated={handleInvoiceUpdated}
+                  onBack={() => setCurrentView(previousView)}
+                  backLabel={previousView === 'history' ? 'Volver al Historial' : 'Volver a Carga'}
+                />
+              </div>
+            )}
 
-          {currentView === 'history' && (
-            <div key="view-history" className="animate-page-enter w-full">
-              <HistoryView
-                invoices={invoices}
-                metrics={metrics}
-                onSelectInvoice={(inv) => handleSelectInvoice(inv, 'history')}
-                onInvoiceDeleted={handleInvoiceDeleted}
-                onInvoicesUpdated={loadData}
-              />
-            </div>
-          )}
-        </Suspense>
+            {currentView === 'history' && (
+              <div key="view-history" className="animate-page-enter w-full">
+                <HistoryView
+                  invoices={invoices}
+                  metrics={metrics}
+                  onSelectInvoice={(inv) => handleSelectInvoice(inv, 'history')}
+                  onInvoiceDeleted={handleInvoiceDeleted}
+                  onInvoicesUpdated={loadData}
+                />
+              </div>
+            )}
+          </Suspense>
+        </ErrorBoundary>
       </div>
 
       <Suspense fallback={null}>

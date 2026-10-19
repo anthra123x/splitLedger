@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   fetchGoogleIntegrationStatus,
@@ -27,12 +27,26 @@ export default function GoogleIntegrationsModal({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'drive' | 'sheets' | 'gmail'>('all');
 
+  const loadStatus = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetchGoogleIntegrationStatus();
+      if (res.data) {
+        setStatusData(res.data);
+      }
+    } catch (err: any) {
+      console.error('Error al cargar estado de Google:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   // Load status on open
   useEffect(() => {
     if (isOpen) {
       loadStatus();
     }
-  }, [isOpen]);
+  }, [isOpen, loadStatus]);
 
   // Escape key handler
   useEffect(() => {
@@ -45,20 +59,6 @@ export default function GoogleIntegrationsModal({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
-
-  const loadStatus = async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetchGoogleIntegrationStatus();
-      if (res.data) {
-        setStatusData(res.data);
-      }
-    } catch (err: any) {
-      console.error('Error al cargar estado de Google:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleConnectToggle = async () => {
     try {
