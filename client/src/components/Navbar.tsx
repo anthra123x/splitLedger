@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchUserProfile, UserProfileData } from '../services/api';
+import { fetchUserProfile, UserProfileData, logoutUser } from '../services/api';
 
 export interface NotificationItem {
   title: string;
@@ -321,23 +321,27 @@ export default function Navbar({
                     </div>
                   </div>
 
-                  {/* Active Connection & Quick Action */}
-                  <div className="mt-3 pt-2.5 border-t border-dashed border-[#444748]/40 flex items-center justify-between">
+                  {/* Active Connection & Logout Action */}
+                  <div className="mt-3 pt-2.5 border-t border-dashed border-[#444748]/40 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 text-[10px] text-[#c4c7c8] font-mono">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                       <span>Sesión Cifrada SSL</span>
                     </div>
-                    {onOpenAuth && (
-                      <button
-                        onClick={() => {
-                          setShowProfile(false);
-                          onOpenAuth();
-                        }}
-                        className="text-[11px] text-white hover:text-zinc-200 font-medium px-2 py-1 rounded bg-[#353437] hover:bg-[#444748] transition-colors cursor-pointer"
-                      >
-                        Iniciar sesión / Registro
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setShowProfile(false);
+                        await logoutUser();
+                        setCurrentView('auth');
+                      }}
+                      className="group inline-flex items-center gap-1 text-[11px] text-red-300 hover:text-white font-medium px-2.5 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-dashed border-red-500/40 hover:border-red-500/70 transition-all cursor-pointer shadow-sm active:scale-95"
+                      title="Cerrar sesión de SplitLedger"
+                    >
+                      <span className="material-symbols-outlined text-[13px] group-hover:-translate-x-0.5 transition-transform">
+                        logout
+                      </span>
+                      <span>Cerrar sesión</span>
+                    </button>
                   </div>
                 </div>
               )}

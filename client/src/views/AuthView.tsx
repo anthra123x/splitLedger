@@ -197,53 +197,55 @@ export default function AuthView({ onBack, onAuthSuccess, initialMode = 'login' 
             </div>
           </div>
 
-          {/* Dynamic Greeting Title */}
-          <h1 className="text-xl sm:text-[22px] font-semibold text-white tracking-tight mb-1">
-            {mode === 'login' && 'Acceso al Sistema'}
-            {mode === 'register' && 'Crear Cuenta'}
-            {mode === 'magic' && 'Acceso sin Contraseña'}
-          </h1>
+          {/* Dynamic Greeting Title with smooth subtle cross-fade */}
+          <div key={`header-${mode}`} className="animate-in fade-in-50 slide-in-from-bottom-1 duration-200 ease-out text-center">
+            <h1 className="text-xl sm:text-[22px] font-semibold text-white tracking-tight mb-1">
+              {mode === 'login' && 'Acceso al Sistema'}
+              {mode === 'register' && 'Crear Cuenta'}
+              {mode === 'magic' && 'Acceso sin Contraseña'}
+            </h1>
 
-          {/* Subtitle with Mode Switcher */}
-          <div className="text-xs sm:text-[13px] text-zinc-400 mb-6 flex items-center justify-center gap-1.5 flex-wrap">
-            {mode === 'login' && (
-              <>
-                <span>¿Primera vez aquí?</span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchMode('register')}
-                  className="text-white font-medium hover:underline hover:text-zinc-200 cursor-pointer transition-colors"
-                >
-                  Regístrate gratis
-                </button>
-              </>
-            )}
+            {/* Subtitle with Mode Switcher */}
+            <div className="text-xs sm:text-[13px] text-zinc-400 mb-6 flex items-center justify-center gap-1.5 flex-wrap">
+              {mode === 'login' && (
+                <>
+                  <span>¿Primera vez aquí?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode('register')}
+                    className="text-white font-medium hover:underline hover:text-zinc-200 active:scale-95 cursor-pointer transition-all"
+                  >
+                    Regístrate gratis
+                  </button>
+                </>
+              )}
 
-            {mode === 'register' && (
-              <>
-                <span>¿Ya tienes una cuenta?</span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchMode('login')}
-                  className="text-white font-medium hover:underline hover:text-zinc-200 cursor-pointer transition-colors"
-                >
-                  Iniciar sesión
-                </button>
-              </>
-            )}
+              {mode === 'register' && (
+                <>
+                  <span>¿Ya tienes una cuenta?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode('login')}
+                    className="text-white font-medium hover:underline hover:text-zinc-200 active:scale-95 cursor-pointer transition-all"
+                  >
+                    Iniciar sesión
+                  </button>
+                </>
+              )}
 
-            {mode === 'magic' && (
-              <>
-                <span>¿Prefieres contraseña?</span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchMode('login')}
-                  className="text-white font-medium hover:underline hover:text-zinc-200 cursor-pointer transition-colors"
-                >
-                  Iniciar sesión con contraseña
-                </button>
-              </>
-            )}
+              {mode === 'magic' && (
+                <>
+                  <span>¿Prefieres contraseña?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode('login')}
+                    className="text-white font-medium hover:underline hover:text-zinc-200 active:scale-95 cursor-pointer transition-all"
+                  >
+                    Iniciar sesión con contraseña
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Notification / Feedback Alerts */}
@@ -265,27 +267,34 @@ export default function AuthView({ onBack, onAuthSuccess, initialMode = 'login' 
             </div>
           )}
 
-          {/* Authentication Form */}
-          <form onSubmit={handleSubmit} className="w-full space-y-3 text-left">
-            {mode === 'register' && (
-              <div>
-                <label className="sr-only" htmlFor="auth-name">
-                  Nombre completo
-                </label>
-                <input
-                  id="auth-name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Nombre completo"
-                  className="w-full h-11 px-3.5 rounded-xl bg-[#151518] border border-white/10 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/35 focus:ring-1 focus:ring-white/20 transition-all font-sans"
-                  autoComplete="name"
-                />
-              </div>
-            )}
+          {/* Authentication Form with Smooth Accordion Transitions */}
+          <form onSubmit={handleSubmit} className="w-full text-left">
+            {/* Smooth Collapsible Full Name Field (Registration Mode) */}
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                mode === 'register'
+                  ? 'max-h-16 opacity-100 scale-100 mb-3'
+                  : 'max-h-0 opacity-0 scale-98 mb-0 pointer-events-none'
+              }`}
+            >
+              <label className="sr-only" htmlFor="auth-name">
+                Nombre completo
+              </label>
+              <input
+                id="auth-name"
+                type="text"
+                required={mode === 'register'}
+                tabIndex={mode === 'register' ? 0 : -1}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nombre completo"
+                className="w-full h-11 px-3.5 rounded-xl bg-[#151518] border border-white/10 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/35 focus:ring-1 focus:ring-white/20 transition-all font-sans"
+                autoComplete="name"
+              />
+            </div>
 
-            <div>
+            {/* Email Field */}
+            <div className="mb-3">
               <label className="sr-only" htmlFor="auth-email">
                 Correo electrónico
               </label>
@@ -301,34 +310,40 @@ export default function AuthView({ onBack, onAuthSuccess, initialMode = 'login' 
               />
             </div>
 
-            {mode !== 'magic' && (
-              <div className="relative">
-                <label className="sr-only" htmlFor="auth-password">
-                  Contraseña
-                </label>
-                <input
-                  id="auth-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'register' ? 'Contraseña segura (mín. 8 caracteres)' : '••••••••'}
-                  className="w-full h-11 px-3.5 pr-10 rounded-xl bg-[#151518] border border-white/10 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/35 focus:ring-1 focus:ring-white/20 transition-all font-sans tracking-wide"
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors p-1"
-                  title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
-                  tabIndex={-1}
-                >
-                  <span className="material-symbols-outlined text-[17px]">
-                    {showPassword ? 'visibility_off' : 'visibility'}
-                  </span>
-                </button>
-              </div>
-            )}
+            {/* Smooth Collapsible Password Field (Hidden in Magic Link mode) */}
+            <div
+              className={`relative overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                mode !== 'magic'
+                  ? 'max-h-16 opacity-100 scale-100 mb-3'
+                  : 'max-h-0 opacity-0 scale-98 mb-0 pointer-events-none'
+              }`}
+            >
+              <label className="sr-only" htmlFor="auth-password">
+                Contraseña
+              </label>
+              <input
+                id="auth-password"
+                type={showPassword ? 'text' : 'password'}
+                required={mode !== 'magic'}
+                tabIndex={mode !== 'magic' ? 0 : -1}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'register' ? 'Contraseña segura (mín. 8 caracteres)' : '••••••••'}
+                className="w-full h-11 px-3.5 pr-10 rounded-xl bg-[#151518] border border-white/10 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:border-white/35 focus:ring-1 focus:ring-white/20 transition-all font-sans tracking-wide"
+                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+                title={showPassword ? 'Ocultar contraseña' : 'Ver contraseña'}
+                tabIndex={-1}
+              >
+                <span className="material-symbols-outlined text-[17px]">
+                  {showPassword ? 'visibility_off' : 'visibility'}
+                </span>
+              </button>
+            </div>
 
             {/* High-Contrast Solid White Action Button */}
             <button
@@ -338,12 +353,10 @@ export default function AuthView({ onBack, onAuthSuccess, initialMode = 'login' 
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-zinc-950 border-t-transparent rounded-full animate-spin" />
-              ) : mode === 'login' ? (
-                'Iniciar sesión'
-              ) : mode === 'register' ? (
-                'Crear cuenta'
               ) : (
-                'Enviar enlace mágico'
+                <span key={mode} className="inline-block animate-in fade-in duration-200">
+                  {mode === 'login' ? 'Iniciar sesión' : mode === 'register' ? 'Crear cuenta' : 'Enviar enlace mágico'}
+                </span>
               )}
             </button>
           </form>
