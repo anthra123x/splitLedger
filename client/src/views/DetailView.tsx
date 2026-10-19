@@ -54,6 +54,16 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const [scanProgress, setScanProgress] = useState(25);
   const [scanStatusText, setScanStatusText] = useState('');
   const [showThinking, setShowThinking] = useState(false);
+  const [activeLayoutTab, setActiveLayoutTab] = useState<'split' | 'items' | 'document'>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      return 'items';
+    }
+    return 'split';
+  });
+
+  const isSplit = activeLayoutTab === 'split';
+  const showDocument = activeLayoutTab === 'document' || isSplit;
+  const showItems = activeLayoutTab === 'items' || isSplit;
 
   // Financial sums from current items
   const currentItemsBaseSum = items.reduce((acc, it) => acc + (it.base_amount || 0), 0);
@@ -193,19 +203,19 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     setScanProgress(25);
     setScanStatusText('Lectura óptica y extracción de coordenadas OCR...');
 
-    const t1 = setTimeout(() => {
+    setTimeout(() => {
       setScanStage(2);
       setScanProgress(60);
       setScanStatusText('Reconstruyendo Grafo de Atención Espacial 2D con SplitLLM...');
     }, 800);
 
-    const t2 = setTimeout(() => {
+    setTimeout(() => {
       setScanStage(3);
       setScanProgress(90);
       setScanStatusText('Verificando balance contable bajo partida doble...');
     }, 1800);
 
-    const t3 = setTimeout(() => {
+    setTimeout(() => {
       setScanProgress(100);
       setTimeout(() => {
         setIsScanning(false);
@@ -405,27 +415,27 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
         
         {/* Minimal & Streamlined Invoice Toolbar */}
         <section className="w-full px-4 sm:px-6 py-2.5 border-b border-dashed border-[#444748]/40 bg-[#1c1b1d]/40 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
             
             {/* Left: Back + Supplier & Invoice Code */}
-            <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
               <button
                 onClick={onBack}
                 className="w-8 h-8 rounded-lg bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/50 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
-                title="Volver"
+                title={backLabel || 'Volver'}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
 
-              <div className="flex items-center gap-2.5 truncate">
-                <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate max-w-[200px] sm:max-w-[260px]" title={cleanSupplierName(invoice.supplier_name)}>
                   {cleanSupplierName(invoice.supplier_name)}
                 </h1>
                 <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0">
                   {invoice.invoice_number}
                 </span>
                 {invoice.invoice_date && (
-                  <span className="hidden md:inline text-xs text-zinc-500 font-mono shrink-0">
+                  <span className="hidden sm:inline text-xs text-zinc-400 font-mono shrink-0">
                     {invoice.invoice_date}
                   </span>
                 )}
@@ -437,7 +447,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     className="bg-[#201f22] hover:bg-[#252427] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-lg pl-6 pr-7 py-1 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors"
                     title="Asignar factura a un Workspace de Proyecto"
                   >
-                    <option value="">Bandeja General (Sin Workspace)</option>
+                    <option value="">Bandeja General</option>
                     {Array.isArray(workspaces) && workspaces.map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name}
@@ -459,21 +469,22 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               </div>
             </div>
 
-            {/* Right: Total + Action */}
-            <div className="flex items-center gap-3.5 shrink-0">
+            {/* Right: Total + Actions */}
+            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-dashed border-[#444748]/30">
               {saveMessage && (
-                <span className="hidden sm:inline text-xs text-zinc-300 font-mono animate-fade-in">
+                <span className="text-xs text-emerald-300 font-mono animate-fade-in truncate max-w-[200px]">
                   {saveMessage}
                 </span>
               )}
               <div className="flex items-baseline gap-1.5 font-mono text-white">
                 <span className="text-xs text-zinc-400 font-sans hidden sm:inline">Total:</span>
-                <span className="text-sm sm:text-base font-bold">
+                <span className="text-sm sm:text-base font-bold whitespace-nowrap">
                   {(targetGrandTotal).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
                 </span>
               </div>
 
               <button
+                type="button"
                 onClick={() => exportInvoicePdf(invoice)}
                 className="bg-[#2a2a2c] hover:bg-[#353437] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
                 title="Descargar Dossier Oficial en PDF"
@@ -483,6 +494,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               </button>
 
               <button
+                type="button"
                 onClick={handleSaveAndReconcile}
                 disabled={isSaving}
                 className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
@@ -494,32 +506,104 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
           </div>
         </section>
 
-        {/* Dual Workspace Layout: Document Canvas (40%) + Line Allocation Engine (60%) */}
-        <section className="w-full px-4 sm:px-6 py-6 flex-1">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* View Layout Tabs & Double-Entry Status Ribbon */}
+        <section className="w-full px-4 sm:px-6 py-2 bg-[#171618] border-b border-dashed border-[#444748]/30">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+            <div className="inline-flex items-center p-1 rounded-xl bg-[#201f22] border border-dashed border-[#444748]/50 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveLayoutTab('items')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  activeLayoutTab === 'items'
+                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Mostrar tabla completa de partidas desglosadas y asiento contable"
+              >
+                <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                <span>Partidas Desglosadas</span>
+                <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                  activeLayoutTab === 'items' ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-zinc-800 text-zinc-400'
+                }`}>
+                  {items.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveLayoutTab('document')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  activeLayoutTab === 'document'
+                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Visualizar documento original de la factura"
+              >
+                <span className="material-symbols-outlined text-[16px]">description</span>
+                <span>Documento Original</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveLayoutTab('split')}
+                className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  activeLayoutTab === 'split'
+                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+                title="Vista dividida: documento a la izquierda y desglose contable a la derecha"
+              >
+                <span className="material-symbols-outlined text-[16px]">vertical_split</span>
+                <span>Vista Dividida</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border border-dashed ${
+                isBalanced
+                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
+                  : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
+                <span>{isBalanced ? 'Partida doble balanceada' : `Descuadre: ${discrepancy.toFixed(2)} €`}</span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* Dual Workspace Layout: Document Canvas + Line Allocation Engine */}
+        <section className="w-full px-4 sm:px-6 py-4 sm:py-6 flex-1">
+          <div className={`max-w-7xl mx-auto w-full gap-6 items-start ${
+            isSplit
+              ? 'grid grid-cols-1 lg:grid-cols-12'
+              : 'flex flex-col'
+          }`}>
             
-            {/* LEFT COLUMN: Optical Inspection & Document Sandbox (5 cols) */}
-            <div className="lg:col-span-5 flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden">
+            {/* LEFT COLUMN: Optical Inspection & Document Sandbox */}
+            {showDocument && (
+            <div className={`flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden ${
+              isSplit ? 'lg:col-span-5' : 'w-full max-w-4xl mx-auto'
+            }`}>
               
               {/* Document Canvas Header Toolbar */}
-              <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 h-14">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded bg-[#353437] text-white font-mono text-[11px] font-medium border border-dashed border-[#444748]/50 uppercase">
+              <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 min-h-[3.25rem] flex-wrap gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="px-2 py-0.5 rounded bg-[#353437] text-white font-mono text-[10px] font-medium border border-dashed border-[#444748]/50 uppercase shrink-0">
                     {fileExt || 'DOC'}
                   </span>
-                  <span className="font-mono text-xs text-[#c4c7c8] truncate max-w-[130px] sm:max-w-[170px]" title={invoice.original_name}>
+                  <span className="font-mono text-xs text-[#c4c7c8] truncate max-w-[100px] sm:max-w-[150px]" title={invoice.original_name}>
                     {invoice.original_name}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
                   {/* View Mode Toggle */}
-                  <div className="flex items-center bg-[#2a2a2c] rounded-lg p-0.5 border border-dashed border-[#444748]/50">
+                  <div className="flex items-center bg-[#2a2a2c] rounded-lg p-0.5 border border-dashed border-[#444748]/50 shrink-0">
                     <button
                       type="button"
                       onClick={() => setPreviewMode('document')}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                        previewMode === 'document' ? 'bg-[#353437] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                        previewMode === 'document' ? 'bg-[#353437] text-white shadow-sm font-semibold' : 'text-zinc-400 hover:text-white'
                       }`}
                       title="Ver factura original real"
                     >
@@ -529,8 +613,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     <button
                       type="button"
                       onClick={() => setPreviewMode('compact')}
-                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                        previewMode === 'compact' ? 'bg-[#353437] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                        previewMode === 'compact' ? 'bg-[#353437] text-white shadow-sm font-semibold' : 'text-zinc-400 hover:text-white'
                       }`}
                       title="Ver ficha sintética compacta"
                     >
@@ -541,8 +625,8 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                       <button
                         type="button"
                         onClick={() => setPreviewMode('raw')}
-                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
-                          previewMode === 'raw' ? 'bg-[#353437] text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                        className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer flex items-center gap-1 ${
+                          previewMode === 'raw' ? 'bg-[#353437] text-white shadow-sm font-semibold' : 'text-zinc-400 hover:text-white'
                         }`}
                         title="Ver código fuente JSON del archivo"
                       >
@@ -554,18 +638,20 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
 
                   {/* Zoom Controls */}
                   {(previewMode === 'document' || previewMode === 'compact' || isImage) && (
-                    <div className="hidden sm:flex items-center gap-0.5 bg-[#2a2a2c] border border-dashed border-[#444748]/50 rounded p-0.5">
+                    <div className="flex items-center gap-0.5 bg-[#2a2a2c] border border-dashed border-[#444748]/50 rounded p-0.5 shrink-0">
                       <button
+                        type="button"
                         onClick={handleZoomOut}
                         className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
                         title="Reducir zoom"
                       >
                         <span className="material-symbols-outlined text-[14px]">remove</span>
                       </button>
-                      <span className="font-mono text-[11px] px-1 text-white select-none">
+                      <span className="font-mono text-[10px] px-1 text-white select-none">
                         {zoom}%
                       </span>
                       <button
+                        type="button"
                         onClick={handleZoomIn}
                         className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors cursor-pointer"
                         title="Aumentar zoom"
@@ -573,6 +659,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                         <span className="material-symbols-outlined text-[14px]">add</span>
                       </button>
                       <button
+                        type="button"
                         onClick={handleZoomFit}
                         className="w-6 h-6 flex items-center justify-center rounded text-[#c4c7c8] hover:text-white hover:bg-[#353437] transition-colors ml-0.5 border-l border-dashed border-[#444748]/40 cursor-pointer"
                         title="Ajustar vista 100%"
@@ -583,9 +670,10 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                   )}
 
                   <button
+                    type="button"
                     onClick={handleReScan}
                     disabled={isScanning}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#2a2a2c] hover:bg-[#353437] text-white text-xs font-medium border border-dashed border-[#444748]/50 transition-colors cursor-pointer disabled:opacity-50"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#2a2a2c] hover:bg-[#353437] text-white text-xs font-medium border border-dashed border-[#444748]/50 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                     title="Re-ejecutar escaneo láser y análisis óptico con SplitLLM"
                   >
                     <span className="material-symbols-outlined text-[15px]">document_scanner</span>
@@ -675,7 +763,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     <div className="relative flex-1 min-h-[580px] bg-[#0a0a0c] p-4 sm:p-6 overflow-auto flex justify-center items-start shadow-inner">
                       <div
                         style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
-                        className="w-full max-w-[620px] bg-white text-slate-900 rounded-sm shadow-2xl p-6 sm:p-8 flex flex-col gap-6 transition-transform duration-150 select-text border border-slate-200"
+                        className="w-full max-w-[640px] bg-white text-slate-900 rounded-sm shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col gap-4 sm:gap-6 transition-transform duration-150 select-text border border-slate-200"
                       >
                         {/* Top Header & Document Metadata */}
                         <div className="flex items-start justify-between border-b-2 border-slate-900 pb-5">
@@ -706,9 +794,9 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                               {docInvoiceNumber}
                             </span>
                             <div className="flex flex-col text-xs font-mono text-slate-600 mt-1 space-y-0.5">
-                              <span>Fecha Emisión: <strong className="text-slate-900">{docIssueDate}</strong></span>
+                              <span className="whitespace-nowrap">Fecha Emisión: <strong className="text-slate-900 font-mono whitespace-nowrap">{docIssueDate}</strong></span>
                               {docDueDate && (
-                                <span>Vencimiento: <strong className="text-slate-900">{docDueDate}</strong></span>
+                                <span className="whitespace-nowrap">Vencimiento: <strong className="text-slate-900 font-mono whitespace-nowrap">{docDueDate}</strong></span>
                               )}
                             </div>
                           </div>
@@ -794,24 +882,24 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                           </div>
 
                           {/* Totals Summary */}
-                          <div className="w-full sm:w-60 bg-slate-50 border border-slate-200 rounded-lg p-3 flex flex-col gap-1.5 text-xs font-mono">
-                            <div className="flex justify-between text-slate-600">
-                              <span>Base Imponible:</span>
-                              <span className="text-slate-800 font-medium">{docSubtotal.toFixed(2)} €</span>
+                          <div className="w-full sm:w-64 bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-3.5 flex flex-col gap-1.5 text-xs font-mono">
+                            <div className="flex justify-between items-baseline text-slate-600">
+                              <span className="shrink-0">Base Imponible:</span>
+                              <span className="text-slate-800 font-medium whitespace-nowrap">{docSubtotal.toFixed(2)} €</span>
                             </div>
-                            <div className="flex justify-between text-slate-600">
-                              <span>IVA (21%):</span>
-                              <span className="text-slate-800 font-medium">{docTaxTotal.toFixed(2)} €</span>
+                            <div className="flex justify-between items-baseline text-slate-600">
+                              <span className="shrink-0">IVA (21%):</span>
+                              <span className="text-slate-800 font-medium whitespace-nowrap">{docTaxTotal.toFixed(2)} €</span>
                             </div>
                             {docRetention > 0 && (
-                              <div className="flex justify-between text-rose-600">
-                                <span>Retención IRPF:</span>
-                                <span>-{docRetention.toFixed(2)} €</span>
+                              <div className="flex justify-between items-baseline text-rose-600">
+                                <span className="shrink-0">Retención IRPF:</span>
+                                <span className="whitespace-nowrap">-{docRetention.toFixed(2)} €</span>
                               </div>
                             )}
-                            <div className="pt-2 border-t border-slate-300 flex justify-between items-center text-sm font-bold text-slate-900">
-                              <span className="font-sans">TOTAL:</span>
-                              <span className="text-base text-slate-950 font-mono font-black">{docGrandTotal.toFixed(2)} {docCurrency === 'EUR' ? '€' : docCurrency}</span>
+                            <div className="pt-2 border-t border-slate-300 flex justify-between items-baseline text-sm font-bold text-slate-900 gap-2">
+                              <span className="font-sans shrink-0">TOTAL:</span>
+                              <span className="text-base sm:text-lg text-slate-950 font-mono font-black whitespace-nowrap">{docGrandTotal.toFixed(2)} {docCurrency === 'EUR' ? '€' : docCurrency}</span>
                             </div>
                           </div>
                         </div>
@@ -927,9 +1015,13 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               </div>
 
             </div>
+            )}
 
             {/* RIGHT COLUMN: Master Item Breakdown Table */}
-            <div className="lg:col-span-7 flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden">
+            {showItems && (
+            <div className={`flex flex-col h-full bg-[#1c1b1d]/85 backdrop-blur-md border border-dashed border-[#444748]/40 rounded-xl shadow-md overflow-hidden ${
+              isSplit ? 'lg:col-span-7' : 'w-full'
+            }`}>
               
               {/* Table Toolbar */}
               <div className="flex items-center justify-between px-3 py-2 bg-[#201f22]/90 border-b border-dashed border-[#444748]/40 h-14">
@@ -1269,6 +1361,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               </div>
 
             </div>
+            )}
 
           </div>
         </section>
