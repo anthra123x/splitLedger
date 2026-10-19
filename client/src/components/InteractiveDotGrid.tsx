@@ -9,6 +9,8 @@ interface InteractiveDotGridProps {
   interactionRadius?: number;
   /** Maximum distance in px a dot can be displaced */
   maxDisplacement?: number;
+  /** Enable continuous autonomous ambient wave motion without requiring mouse */
+  autonomous?: boolean;
 }
 
 interface Dot {
@@ -18,14 +20,15 @@ interface Dot {
   y: number;
   targetX: number;
   targetY: number;
-  intensity: number; // 0 to 1 for subtle mouse highlight
+  intensity: number; // 0 to 1 for subtle glow/highlight
 }
 
 export default function InteractiveDotGrid({
   spacing = 28,
   dotRadius = 1.35,
   interactionRadius = 140,
-  maxDisplacement = 18
+  maxDisplacement = 18,
+  autonomous = false
 }: InteractiveDotGridProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -85,6 +88,9 @@ export default function InteractiveDotGrid({
       }
 
       drawDots();
+      if (autonomous) {
+        startLoop();
+      }
     };
 
     const drawDots = () => {
@@ -93,34 +99,48 @@ export default function InteractiveDotGrid({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.restore();
 
-      // Batch normal resting dots for optimal 60fps performance
+      // Batch 1: Standard resting dots (intensity <= 0.05)
       ctx.beginPath();
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
-        if (d.intensity <= 0.02) {
+        if (d.intensity <= 0.05) {
           ctx.moveTo(d.x + dotRadius, d.y);
           ctx.arc(d.x, d.y, dotRadius, 0, Math.PI * 2);
         }
       }
-      // Visible drafting board dot color
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.20)';
       ctx.fill();
 
-      // Draw highlighted/active dots reacting to the cursor
+      // Batch 2: Ambient wave glow dots (0.05 < intensity <= 0.35)
+      ctx.beginPath();
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
-        if (d.intensity > 0.02) {
-          ctx.beginPath();
-          const r = dotRadius + d.intensity * 0.9;
+        if (d.intensity > 0.05 && d.intensity <= 0.35) {
+          const r = dotRadius + d.intensity * 0.6;
+          ctx.moveTo(d.x + r, d.y);
           ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
-          const alpha = 0.22 + d.intensity * 0.58;
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
-          ctx.fill();
         }
       }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+      ctx.fill();
+
+      // Batch 3: Active crest & cursor interaction dots (intensity > 0.35)
+      ctx.beginPath();
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        if (d.intensity > 0.35) {
+          const r = dotRadius + d.intensity * 1.1;
+          ctx.moveTo(d.x + r, d.y);
+          ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        }
+      }
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.fill();
     };
 
     const updateDots = () => {
+      const time = performance.now() * 0.001;
+
       // Smooth mouse tracking
       mouse.x += (mouse.targetX - mouse.x) * 0.22;
       mouse.y += (mouse.targetY - mouse.y) * 0.22;
@@ -130,36 +150,52 @@ export default function InteractiveDotGrid({
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
 
+        // Autonomous harmonic wave calculations
+        let autoDispX = 0;
+        let autoDispY = 0;
+        let autoIntensity = 0;
+
+        if (autonomous) {
+          const wave1 = Math.sin(time * 1.4 + d.baseX * 0.007 + d.baseY * 0.005);
+          const wave2 = Math.cos(time * 1.0 - d.baseX * 0.005 + d.baseY * 0.008);
+          const combinedWave = (wave1 + wave2) * 0.5;
+
+          autoDispX = Math.cos(time * 1.1 + d.baseY * 0.012) * 3.5;
+          autoDispY = Math.sin(time * 0.9 + d.baseX * 0.012) * 3.5;
+          autoIntensity = Math.max(0, (combinedWave + 0.3) * 0.45);
+        }
+
+        // Cursor repulsion and interaction calculations
+        let mouseDispX = 0;
+        let mouseDispY = 0;
+        let mouseIntensity = 0;
+
         if (mouse.active) {
           const dx = mouse.x - d.baseX;
           const dy = mouse.y - d.baseY;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < interactionRadius && dist > 0.001) {
-            // Smooth sinusoidal repulsion
             const factor = 1 - dist / interactionRadius;
             const push = Math.sin(factor * Math.PI * 0.5) * maxDisplacement;
             const angle = Math.atan2(dy, dx);
-
-            d.targetX = d.baseX - Math.cos(angle) * push;
-            d.targetY = d.baseY - Math.sin(angle) * push;
-            d.intensity += (factor - d.intensity) * 0.25;
-          } else {
-            d.targetX = d.baseX;
-            d.targetY = d.baseY;
-            d.intensity += (0 - d.intensity) * 0.15;
+            mouseDispX = -Math.cos(angle) * push;
+            mouseDispY = -Math.sin(angle) * push;
+            mouseIntensity = factor;
           }
-        } else {
-          d.targetX = d.baseX;
-          d.targetY = d.baseY;
-          d.intensity += (0 - d.intensity) * 0.15;
         }
+
+        d.targetX = d.baseX + autoDispX + mouseDispX;
+        d.targetY = d.baseY + autoDispY + mouseDispY;
+
+        const targetIntensity = Math.min(1, Math.max(autoIntensity, mouseIntensity));
+        d.intensity += (targetIntensity - d.intensity) * (autonomous ? 0.18 : 0.2);
 
         // Fluid spring interpolation back to target
         const diffX = d.targetX - d.x;
         const diffY = d.targetY - d.y;
-        d.x += diffX * 0.18;
-        d.y += diffY * 0.18;
+        d.x += diffX * 0.2;
+        d.y += diffY * 0.2;
 
         const delta = Math.abs(diffX) + Math.abs(diffY);
         if (delta > maxDelta) {
@@ -169,15 +205,17 @@ export default function InteractiveDotGrid({
 
       drawDots();
 
-      // If settled, pause loop to conserve CPU/battery
-      if (maxDelta < 0.05 && (!mouse.active || Math.hypot(mouse.targetX - mouse.x, mouse.targetY - mouse.y) < 0.1)) {
-        idleCounter++;
-        if (idleCounter > 20) {
-          isRunning = false;
-          return;
+      // If settled and non-autonomous, pause loop to conserve CPU/battery
+      if (!autonomous) {
+        if (maxDelta < 0.05 && (!mouse.active || Math.hypot(mouse.targetX - mouse.x, mouse.targetY - mouse.y) < 0.1)) {
+          idleCounter++;
+          if (idleCounter > 20) {
+            isRunning = false;
+            return;
+          }
+        } else {
+          idleCounter = 0;
         }
-      } else {
-        idleCounter = 0;
       }
 
       animationFrameId = requestAnimationFrame(updateDots);
@@ -226,7 +264,7 @@ export default function InteractiveDotGrid({
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [spacing, dotRadius, interactionRadius, maxDisplacement]);
+  }, [spacing, dotRadius, interactionRadius, maxDisplacement, autonomous]);
 
   return (
     <canvas

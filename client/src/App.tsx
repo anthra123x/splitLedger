@@ -6,14 +6,17 @@ import UploadView from './views/UploadView';
 import DetailView from './views/DetailView';
 import HistoryView from './views/HistoryView';
 import AuthView from './views/AuthView';
-import { fetchInvoices, fetchInvoiceById, fetchMetrics, getExportCsvUrl } from './services/api';
+import { fetchInvoices, fetchInvoiceById, fetchMetrics, getExportCsvUrl, getStoredAuth } from './services/api';
 import { Invoice, SystemMetrics } from './types';
 
 import FloatingAiChat from './components/FloatingAiChat';
 import InteractiveDotGrid from './components/InteractiveDotGrid';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history' | 'auth'>('upload');
+  const [currentView, setCurrentView] = useState<'upload' | 'detail' | 'history' | 'auth'>(() => {
+    const auth = getStoredAuth();
+    return auth?.user ? 'upload' : 'auth';
+  });
   const [previousView, setPreviousView] = useState<'upload' | 'history' | 'detail'>('upload');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -124,13 +127,13 @@ export default function App() {
   if (currentView === 'auth') {
     return (
       <AuthView
-        onBack={() => setCurrentView(previousView)}
         onAuthSuccess={(user) => {
           setNotifications((prev) => [
             { title: `Sesión iniciada: ${user.name}`, detail: `Autenticado como ${user.role} (${user.email})` },
             ...prev
           ]);
           loadData();
+          setCurrentView(previousView || 'upload');
         }}
       />
     );
