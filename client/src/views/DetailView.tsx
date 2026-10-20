@@ -30,6 +30,39 @@ const DEFAULT_PGC_ACCOUNTS = [
   { code: '410000', name: 'Acreedores por Prestaciones de Servicios', group: 'Grupo 40 - Pasivo Corriente' },
 ];
 
+const STAGE_CONFIGS: Record<CoactiveStage, { label: string; shortLabel: string; badgeClass: string; dotClass: string }> = {
+  persuasivo: {
+    label: 'Cobro Persuasivo',
+    shortLabel: 'Persuasivo',
+    badgeClass: 'bg-sky-500/15 text-sky-300 border-sky-500/40',
+    dotClass: 'bg-sky-400',
+  },
+  mandamiento: {
+    label: 'Mandamiento de Pago',
+    shortLabel: 'Mandamiento',
+    badgeClass: 'bg-amber-500/15 text-amber-300 border-amber-500/40',
+    dotClass: 'bg-amber-400',
+  },
+  medidas_cautelares: {
+    label: 'Embargos y Cautelares',
+    shortLabel: 'Embargos',
+    badgeClass: 'bg-purple-500/15 text-purple-300 border-purple-500/40',
+    dotClass: 'bg-purple-400',
+  },
+  acuerdo_pago: {
+    label: 'Acuerdo de Pago',
+    shortLabel: 'Acuerdo',
+    badgeClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40',
+    dotClass: 'bg-emerald-400',
+  },
+  recaudado: {
+    label: 'Recaudado / Liquidado',
+    shortLabel: 'Recaudado',
+    badgeClass: 'bg-teal-500/15 text-teal-300 border-teal-500/40',
+    dotClass: 'bg-teal-400',
+  },
+};
+
 interface DetailViewProps {
   invoice: Invoice | null;
   onInvoiceUpdated?: (invoice: Invoice) => void;
@@ -426,90 +459,94 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
       if (onInvoiceUpdated) onInvoiceUpdated(res.data);
     } catch (err: any) {
       alert(`Error al guardar: ${err.message}`);
-    } finally {
       setIsSaving(false);
       setTimeout(() => setSaveMessage(''), 3500);
     }
   };
 
+  const currentStageConfig = STAGE_CONFIGS[coactiveStage] || STAGE_CONFIGS.persuasivo;
+
   return (
-    <main className="w-full pt-20 bg-transparent min-h-[calc(100vh-5rem)]">
-      <div className="flex flex-col w-full">
+    <main className="w-full pt-24 pb-12 bg-transparent min-h-[calc(100vh-5rem)]">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-6">
         
-        {/* Unified Command Center Header */}
-        <header className="w-full border-b border-dashed border-[#444748]/40 bg-[#171618]/90 backdrop-blur-md px-4 sm:px-6 py-3">
-          <div className="max-w-7xl mx-auto flex flex-col gap-2.5">
+        {/* Floating Master Card Header */}
+        <header className="w-full bg-[#1c1b1d]/85 backdrop-blur-xl border border-dashed border-[#444748]/60 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col gap-4">
+          
+          {/* Top Tier: Identity, Expediente & Financial Totals */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            
+            {/* Left: Back button + Title & Coactive Metadata */}
+            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-9 h-9 rounded-xl bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/60 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0 shadow-sm"
+                title={backLabel || 'Volver al listado'}
+              >
+                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              </button>
 
-            {/* Top Row: Navigation, Document Identity & Main Financial CTAs */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              
-              {/* Left Identity: Back + Emisor + Codes */}
-              <div className="flex items-start sm:items-center gap-3 min-w-0">
-                <button
-                  type="button"
-                  onClick={onBack}
-                  className="w-8 h-8 rounded-lg bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/50 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 mt-0.5 sm:mt-0"
-                  title={backLabel || 'Volver'}
-                >
-                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                </button>
+              <div className="flex flex-col min-w-0 gap-1">
+                {/* Title and Identification Badges */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-base sm:text-lg font-bold text-white tracking-tight truncate max-w-[280px] sm:max-w-md" title={cleanSupplierName(invoice.supplier_name)}>
+                    {cleanSupplierName(invoice.supplier_name)}
+                  </h1>
+                  <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/60 font-medium">
+                    {invoice.invoice_number}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 font-mono text-xs px-2.5 py-0.5 rounded-lg bg-sky-950/40 text-sky-300 border border-sky-800/40 font-medium shadow-sm">
+                    <span className="material-symbols-outlined text-[14px]">gavel</span>
+                    <span>{invoice?.coactive?.expediente_number || `EXP-${(invoice?.id || '0000').substring(0, 8).toUpperCase()}`}</span>
+                  </span>
+                </div>
 
-                <div className="flex flex-col min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-sm sm:text-base font-bold text-white tracking-tight truncate max-w-[260px]" title={cleanSupplierName(invoice.supplier_name)}>
-                      {cleanSupplierName(invoice.supplier_name)}
-                    </h1>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0 font-medium">
-                      {invoice.invoice_number}
-                    </span>
-                    <span className="inline-flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded bg-sky-950/40 text-sky-300 border border-sky-800/40 shrink-0">
-                      <span className="material-symbols-outlined text-[13px]">gavel</span>
-                      <span>{invoice?.coactive?.expediente_number || `EXP-${(invoice?.id || '0000').substring(0, 8).toUpperCase()}`}</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5 flex-wrap">
-                    <span>Ejecutado: <strong className="text-zinc-200 font-medium">{invoice?.coactive?.debtor_name || invoice?.customer_name || 'SplitLedger Labs S.L.'}</strong></span>
-                    <span className="text-zinc-500 font-mono">({invoice?.coactive?.debtor_tax_id || invoice?.customer_tax_id || 'N/D'})</span>
-                    <span className="text-zinc-600 hidden sm:inline">•</span>
-                    {invoice.invoice_date && (
-                      <span className="font-mono text-zinc-400 hidden sm:inline">{invoice.invoice_date}</span>
-                    )}
-                    <span className="text-zinc-600 hidden sm:inline">•</span>
-                    <span className="hidden sm:inline">Vigencia: <span className="font-mono text-zinc-300">{invoice?.coactive?.fiscal_year || '2026'}</span></span>
-                  </div>
+                {/* Subtitle: Debtor & Fiscal Metadata */}
+                <div className="flex items-center gap-2 text-xs text-zinc-400 flex-wrap">
+                  <span>Deudor: <strong className="text-zinc-200 font-medium">{invoice?.coactive?.debtor_name || invoice?.customer_name || 'SplitLedger Labs S.L.'}</strong></span>
+                  <span className="text-zinc-500 font-mono">({invoice?.coactive?.debtor_tax_id || invoice?.customer_tax_id || 'N/D'})</span>
+                  <span className="text-zinc-600 hidden sm:inline">•</span>
+                  {invoice.invoice_date && (
+                    <span className="font-mono text-zinc-400 hidden sm:inline">{invoice.invoice_date}</span>
+                  )}
+                  <span className="text-zinc-600 hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">Vigencia: <span className="font-mono text-zinc-300">{invoice?.coactive?.fiscal_year || '2026'}</span></span>
                 </div>
               </div>
+            </div>
 
-              {/* Right: Total + Main CTAs */}
-              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-dashed border-[#444748]/30">
-                {saveMessage && (
-                  <span className="text-xs text-emerald-300 font-mono animate-fade-in truncate max-w-[200px]">
-                    {saveMessage}
-                  </span>
-                )}
-                <div className="flex items-baseline gap-1.5 font-mono text-white">
-                  <span className="text-xs text-zinc-400 font-sans hidden sm:inline">Total:</span>
-                  <span className="text-sm sm:text-base font-bold whitespace-nowrap">
-                    {targetGrandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                  </span>
-                </div>
+            {/* Right: Financial Total & Primary Actions */}
+            <div className="flex items-center justify-between sm:justify-end gap-3.5 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-dashed border-[#444748]/40">
+              {saveMessage && (
+                <span className="text-xs text-emerald-300 font-mono animate-fade-in truncate max-w-[220px]">
+                  {saveMessage}
+                </span>
+              )}
 
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-400">Total Crédito</span>
+                <span className="text-base sm:text-lg font-bold font-mono text-white tracking-tight">
+                  {targetGrandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => exportInvoicePdf(invoice)}
-                  className="bg-[#201f22] hover:bg-[#2a2a2c] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="bg-[#201f22] hover:bg-[#2a2a2c] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
                   title="Descargar Dossier Oficial en PDF"
                 >
                   <span className="material-symbols-outlined text-[16px] text-red-400">picture_as_pdf</span>
-                  <span className="hidden sm:inline">Exportar PDF</span>
+                  <span className="hidden sm:inline">PDF</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={handleSaveAndReconcile}
                   disabled={isSaving}
-                  className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-md inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[16px]">check</span>
                   <span>{isSaving ? 'Guardando...' : 'Conciliar'}</span>
@@ -518,137 +555,133 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
 
             </div>
 
-            {/* Bottom Row: View Mode Switcher + Workspace + Etapa Procesal + Parity Badge */}
-            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-dashed border-[#444748]/30 text-xs">
-              
-              {/* Left Controls: Layout Tabs & Workspace Selector */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="inline-flex items-center p-0.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/50 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setActiveLayoutTab('items')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                      activeLayoutTab === 'items'
-                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[15px]">receipt_long</span>
-                    <span>Partidas</span>
-                    <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
-                      activeLayoutTab === 'items' ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {items.length}
-                    </span>
-                  </button>
+          </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveLayoutTab('document')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                      activeLayoutTab === 'document'
-                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[15px]">description</span>
-                    <span>Documento</span>
-                  </button>
+          {/* Bottom Tier: View Switcher, Workspace & Coactive Stage Ribbon */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-dashed border-[#444748]/40 text-xs">
+            
+            {/* Left Controls: Layout Segmented Switcher & Workspace Selector */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="inline-flex items-center p-1 rounded-xl bg-[#131315]/80 border border-dashed border-[#444748]/50 text-xs gap-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveLayoutTab('items')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                    activeLayoutTab === 'items'
+                      ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">receipt_long</span>
+                  <span>Partidas</span>
+                  <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                    activeLayoutTab === 'items' ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-zinc-800 text-zinc-400'
+                  }`}>
+                    {items.length}
+                  </span>
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setActiveLayoutTab('split')}
-                    className={`hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
-                      activeLayoutTab === 'split'
-                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[15px]">vertical_split</span>
-                    <span>Vista Dividida</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveLayoutTab('document')}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                    activeLayoutTab === 'document'
+                      ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">description</span>
+                  <span>Documento</span>
+                </button>
 
-                {/* Workspace Selector Badge */}
-                <div className="relative inline-flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setActiveLayoutTab('split')}
+                  className={`hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                    activeLayoutTab === 'split'
+                      ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">vertical_split</span>
+                  <span>Vista Dividida</span>
+                </button>
+              </div>
+
+              {/* Workspace Selector */}
+              <div className="relative inline-flex items-center">
+                <select
+                  value={currentWorkspaceId || ''}
+                  onChange={(e) => handleWorkspaceChange(e.target.value)}
+                  className="bg-[#131315]/80 hover:bg-[#201f22] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-xl pl-6 pr-7 py-1.5 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors shadow-sm"
+                  title="Asignar a Workspace de Proyecto"
+                >
+                  <option value="">Bandeja General</option>
+                  {Array.isArray(workspaces) && workspaces.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                <span
+                  className="w-2 h-2 rounded-full absolute left-2.5 pointer-events-none"
+                  style={{
+                    backgroundColor: currentWorkspaceId && Array.isArray(workspaces)
+                      ? workspaces.find((w) => w.id === currentWorkspaceId)?.color || '#38bdf8'
+                      : '#71717a',
+                  }}
+                />
+                <span className="material-symbols-outlined text-[14px] text-zinc-400 absolute right-2 pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            {/* Right Controls: Stage Pill Selector & Parity Badge */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Coactive Stage Interactive Pill */}
+              <div className="relative inline-flex items-center">
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl border border-dashed shadow-sm transition-all ${currentStageConfig.badgeClass}`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${currentStageConfig.dotClass}`}></span>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Etapa:</span>
                   <select
-                    value={currentWorkspaceId || ''}
-                    onChange={(e) => handleWorkspaceChange(e.target.value)}
-                    className="bg-[#201f22] hover:bg-[#252427] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-lg pl-6 pr-7 py-1 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors"
-                    title="Asignar a Workspace de Proyecto"
+                    value={coactiveStage}
+                    onChange={(e) => handleCoactiveStageChange(e.target.value as CoactiveStage)}
+                    className="bg-transparent text-xs font-semibold cursor-pointer focus:outline-none pr-5 appearance-none text-inherit"
+                    title="Cambiar Etapa Procesal de Cobro Coactivo"
                   >
-                    <option value="">Bandeja General</option>
-                    {Array.isArray(workspaces) && workspaces.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
+                    <option value="persuasivo" className="bg-[#1c1b1d] text-sky-400">Cobro Persuasivo</option>
+                    <option value="mandamiento" className="bg-[#1c1b1d] text-amber-400">Mandamiento de Pago</option>
+                    <option value="medidas_cautelares" className="bg-[#1c1b1d] text-purple-400">Embargos y Cautelares</option>
+                    <option value="acuerdo_pago" className="bg-[#1c1b1d] text-emerald-400">Acuerdo de Pago</option>
+                    <option value="recaudado" className="bg-[#1c1b1d] text-teal-400">Recaudado / Liquidado</option>
                   </select>
-                  <span
-                    className="w-2 h-2 rounded-full absolute left-2 pointer-events-none"
-                    style={{
-                      backgroundColor: currentWorkspaceId && Array.isArray(workspaces)
-                        ? workspaces.find((w) => w.id === currentWorkspaceId)?.color || '#38bdf8'
-                        : '#71717a',
-                    }}
-                  />
-                  <span className="material-symbols-outlined text-[13px] text-zinc-400 absolute right-1.5 pointer-events-none">
+                  <span className="material-symbols-outlined text-[14px] absolute right-2 pointer-events-none opacity-70">
                     expand_more
                   </span>
                 </div>
               </div>
 
-              {/* Right Controls: Etapa Procesal & Double-Entry Parity */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5 bg-[#201f22] px-2 py-0.5 rounded-lg border border-dashed border-[#444748]/50">
-                  <span className="text-[10px] text-zinc-400 font-mono uppercase">Etapa:</span>
-                  <div className="inline-flex items-center gap-1">
-                    {[
-                      { stage: 'persuasivo' as CoactiveStage, label: 'Persuasivo', activeBg: 'bg-sky-500 text-white font-bold' },
-                      { stage: 'mandamiento' as CoactiveStage, label: 'Mandamiento', activeBg: 'bg-amber-500 text-zinc-950 font-bold' },
-                      { stage: 'medidas_cautelares' as CoactiveStage, label: 'Embargos', activeBg: 'bg-purple-500 text-white font-bold' },
-                      { stage: 'acuerdo_pago' as CoactiveStage, label: 'Acuerdo', activeBg: 'bg-emerald-500 text-white font-bold' },
-                      { stage: 'recaudado' as CoactiveStage, label: 'Recaudado', activeBg: 'bg-teal-500 text-white font-bold' },
-                    ].map((s) => {
-                      const isCurrent = coactiveStage === s.stage;
-                      return (
-                        <button
-                          key={s.stage}
-                          type="button"
-                          onClick={() => handleCoactiveStageChange(s.stage)}
-                          className={`px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
-                            isCurrent
-                              ? `${s.activeBg} shadow-sm`
-                              : 'text-zinc-400 hover:text-white'
-                          }`}
-                        >
-                          {s.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border border-dashed ${
-                    isBalanced
-                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
-                      : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
-                    <span>{isBalanced ? 'Partida balanceada' : `Descuadre: ${discrepancy.toFixed(2)} €`}</span>
-                  </span>
-                </div>
+              {/* Double-Entry Parity Badge */}
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-medium border border-dashed shadow-sm ${
+                  isBalanced
+                    ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
+                    : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
+                  <span>{isBalanced ? 'Partida balanceada' : `Descuadre: ${discrepancy.toFixed(2)} €`}</span>
+                </span>
               </div>
-
             </div>
 
           </div>
+
         </header>
 
         {/* Dual Workspace Layout: Document Canvas + Line Allocation Engine */}
-        <section className="w-full px-4 sm:px-6 py-4 sm:py-6 flex-1">
-          <div className={`max-w-7xl mx-auto w-full gap-6 items-start ${
+        <section className="w-full flex-1">
+          <div className={`w-full gap-6 items-start ${
             isSplit
               ? 'grid grid-cols-1 lg:grid-cols-12'
               : 'flex flex-col'
