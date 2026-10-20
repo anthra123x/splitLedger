@@ -436,39 +436,146 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     <main className="w-full pt-20 bg-transparent min-h-[calc(100vh-5rem)]">
       <div className="flex flex-col w-full">
         
-        {/* Minimal & Streamlined Invoice Toolbar */}
-        <section className="w-full px-4 sm:px-6 py-2.5 border-b border-dashed border-[#444748]/40 bg-[#1c1b1d]/40 backdrop-blur-md">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
-            
-            {/* Left: Back + Supplier & Invoice Code */}
-            <div className="flex items-center gap-2.5 min-w-0 flex-wrap sm:flex-nowrap">
-              <button
-                onClick={onBack}
-                className="w-8 h-8 rounded-lg bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/50 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0"
-                title={backLabel || 'Volver'}
-              >
-                <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-              </button>
+        {/* Unified Command Center Header */}
+        <header className="w-full border-b border-dashed border-[#444748]/40 bg-[#171618]/90 backdrop-blur-md px-4 sm:px-6 py-3">
+          <div className="max-w-7xl mx-auto flex flex-col gap-2.5">
 
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <h1 className="text-sm sm:text-base font-semibold text-white tracking-tight truncate max-w-[200px] sm:max-w-[260px]" title={cleanSupplierName(invoice.supplier_name)}>
-                  {cleanSupplierName(invoice.supplier_name)}
-                </h1>
-                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0">
-                  {invoice.invoice_number}
-                </span>
-                {invoice.invoice_date && (
-                  <span className="hidden sm:inline text-xs text-zinc-400 font-mono shrink-0">
-                    {invoice.invoice_date}
+            {/* Top Row: Navigation, Document Identity & Main Financial CTAs */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              
+              {/* Left Identity: Back + Emisor + Codes */}
+              <div className="flex items-start sm:items-center gap-3 min-w-0">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="w-8 h-8 rounded-lg bg-[#201f22] hover:bg-[#2a2a2c] text-zinc-300 hover:text-white border border-dashed border-[#444748]/50 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 mt-0.5 sm:mt-0"
+                  title={backLabel || 'Volver'}
+                >
+                  <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                </button>
+
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h1 className="text-sm sm:text-base font-bold text-white tracking-tight truncate max-w-[260px]" title={cleanSupplierName(invoice.supplier_name)}>
+                      {cleanSupplierName(invoice.supplier_name)}
+                    </h1>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#201f22] text-[#c4c7c8] border border-dashed border-[#444748]/50 shrink-0 font-medium">
+                      {invoice.invoice_number}
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded bg-sky-950/40 text-sky-300 border border-sky-800/40 shrink-0">
+                      <span className="material-symbols-outlined text-[13px]">gavel</span>
+                      <span>{invoice?.coactive?.expediente_number || `EXP-${(invoice?.id || '0000').substring(0, 8).toUpperCase()}`}</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-zinc-400 mt-0.5 flex-wrap">
+                    <span>Ejecutado: <strong className="text-zinc-200 font-medium">{invoice?.coactive?.debtor_name || invoice?.customer_name || 'SplitLedger Labs S.L.'}</strong></span>
+                    <span className="text-zinc-500 font-mono">({invoice?.coactive?.debtor_tax_id || invoice?.customer_tax_id || 'N/D'})</span>
+                    <span className="text-zinc-600 hidden sm:inline">•</span>
+                    {invoice.invoice_date && (
+                      <span className="font-mono text-zinc-400 hidden sm:inline">{invoice.invoice_date}</span>
+                    )}
+                    <span className="text-zinc-600 hidden sm:inline">•</span>
+                    <span className="hidden sm:inline">Vigencia: <span className="font-mono text-zinc-300">{invoice?.coactive?.fiscal_year || '2026'}</span></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Total + Main CTAs */}
+              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-dashed border-[#444748]/30">
+                {saveMessage && (
+                  <span className="text-xs text-emerald-300 font-mono animate-fade-in truncate max-w-[200px]">
+                    {saveMessage}
                   </span>
                 )}
+                <div className="flex items-baseline gap-1.5 font-mono text-white">
+                  <span className="text-xs text-zinc-400 font-sans hidden sm:inline">Total:</span>
+                  <span className="text-sm sm:text-base font-bold whitespace-nowrap">
+                    {targetGrandTotal.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => exportInvoicePdf(invoice)}
+                  className="bg-[#201f22] hover:bg-[#2a2a2c] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Descargar Dossier Oficial en PDF"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-red-400">picture_as_pdf</span>
+                  <span className="hidden sm:inline">Exportar PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAndReconcile}
+                  disabled={isSaving}
+                  className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">check</span>
+                  <span>{isSaving ? 'Guardando...' : 'Conciliar'}</span>
+                </button>
+              </div>
+
+            </div>
+
+            {/* Bottom Row: View Mode Switcher + Workspace + Etapa Procesal + Parity Badge */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-dashed border-[#444748]/30 text-xs">
+              
+              {/* Left Controls: Layout Tabs & Workspace Selector */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="inline-flex items-center p-0.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/50 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setActiveLayoutTab('items')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                      activeLayoutTab === 'items'
+                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">receipt_long</span>
+                    <span>Partidas</span>
+                    <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                      activeLayoutTab === 'items' ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-zinc-800 text-zinc-400'
+                    }`}>
+                      {items.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveLayoutTab('document')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                      activeLayoutTab === 'document'
+                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">description</span>
+                    <span>Documento</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveLayoutTab('split')}
+                    className={`hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                      activeLayoutTab === 'split'
+                        ? 'bg-white text-zinc-950 shadow-sm font-semibold'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">vertical_split</span>
+                    <span>Vista Dividida</span>
+                  </button>
+                </div>
+
                 {/* Workspace Selector Badge */}
-                <div className="relative inline-flex items-center shrink-0">
+                <div className="relative inline-flex items-center">
                   <select
                     value={currentWorkspaceId || ''}
                     onChange={(e) => handleWorkspaceChange(e.target.value)}
                     className="bg-[#201f22] hover:bg-[#252427] text-xs text-zinc-300 border border-dashed border-[#444748]/60 rounded-lg pl-6 pr-7 py-1 appearance-none cursor-pointer focus:outline-none focus:border-white/50 transition-colors"
-                    title="Asignar factura a un Workspace de Proyecto"
+                    title="Asignar a Workspace de Proyecto"
                   >
                     <option value="">Bandeja General</option>
                     {Array.isArray(workspaces) && workspaces.map((w) => (
@@ -478,171 +585,66 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                     ))}
                   </select>
                   <span
-                    className="w-2.5 h-2.5 rounded-full absolute left-2 pointer-events-none"
+                    className="w-2 h-2 rounded-full absolute left-2 pointer-events-none"
                     style={{
                       backgroundColor: currentWorkspaceId && Array.isArray(workspaces)
                         ? workspaces.find((w) => w.id === currentWorkspaceId)?.color || '#38bdf8'
                         : '#71717a',
                     }}
                   />
-                  <span className="material-symbols-outlined text-[14px] text-zinc-400 absolute right-1.5 pointer-events-none">
+                  <span className="material-symbols-outlined text-[13px] text-zinc-400 absolute right-1.5 pointer-events-none">
                     expand_more
                   </span>
                 </div>
               </div>
-            </div>
 
-            {/* Right: Total + Actions */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 md:pt-0 border-t md:border-t-0 border-dashed border-[#444748]/30">
-              {saveMessage && (
-                <span className="text-xs text-emerald-300 font-mono animate-fade-in truncate max-w-[200px]">
-                  {saveMessage}
-                </span>
-              )}
-              <div className="flex items-baseline gap-1.5 font-mono text-white">
-                <span className="text-xs text-zinc-400 font-sans hidden sm:inline">Total:</span>
-                <span className="text-sm sm:text-base font-bold whitespace-nowrap">
-                  {(targetGrandTotal).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-                </span>
+              {/* Right Controls: Etapa Procesal & Double-Entry Parity */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-[#201f22] px-2 py-0.5 rounded-lg border border-dashed border-[#444748]/50">
+                  <span className="text-[10px] text-zinc-400 font-mono uppercase">Etapa:</span>
+                  <div className="inline-flex items-center gap-1">
+                    {[
+                      { stage: 'persuasivo' as CoactiveStage, label: 'Persuasivo', activeBg: 'bg-sky-500 text-white font-bold' },
+                      { stage: 'mandamiento' as CoactiveStage, label: 'Mandamiento', activeBg: 'bg-amber-500 text-zinc-950 font-bold' },
+                      { stage: 'medidas_cautelares' as CoactiveStage, label: 'Embargos', activeBg: 'bg-purple-500 text-white font-bold' },
+                      { stage: 'acuerdo_pago' as CoactiveStage, label: 'Acuerdo', activeBg: 'bg-emerald-500 text-white font-bold' },
+                      { stage: 'recaudado' as CoactiveStage, label: 'Recaudado', activeBg: 'bg-teal-500 text-white font-bold' },
+                    ].map((s) => {
+                      const isCurrent = coactiveStage === s.stage;
+                      return (
+                        <button
+                          key={s.stage}
+                          type="button"
+                          onClick={() => handleCoactiveStageChange(s.stage)}
+                          className={`px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer ${
+                            isCurrent
+                              ? `${s.activeBg} shadow-sm`
+                              : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border border-dashed ${
+                    isBalanced
+                      ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
+                      : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
+                    <span>{isBalanced ? 'Partida balanceada' : `Descuadre: ${discrepancy.toFixed(2)} €`}</span>
+                  </span>
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => exportInvoicePdf(invoice)}
-                className="bg-[#2a2a2c] hover:bg-[#353437] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Descargar Dossier Oficial en PDF"
-              >
-                <span className="material-symbols-outlined text-[16px] text-red-400">picture_as_pdf</span>
-                <span className="hidden sm:inline">Exportar PDF</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveAndReconcile}
-                disabled={isSaving}
-                className="bg-white text-zinc-950 hover:bg-zinc-200 active:scale-95 px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[16px]">check</span>
-                <span>{isSaving ? 'Guardando...' : 'Conciliar'}</span>
-              </button>
             </div>
+
           </div>
-        </section>
-
-        {/* BARRA EJECUTIVA DE EXPEDIENTE DE COBRO COACTIVO */}
-        <section className="w-full px-4 sm:px-6 py-2.5 bg-[#171618] border-b border-dashed border-[#444748]/40">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            {/* Left: Expediente Info & Deudor */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/60 text-white font-mono">
-                <span className="material-symbols-outlined text-[15px] text-sky-400">gavel</span>
-                <span className="font-bold">{invoice?.coactive?.expediente_number || `EXP-${(invoice?.id || '0000').substring(0, 8).toUpperCase()}`}</span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-300">
-                <span>Ejecutado: <strong className="text-white">{invoice?.coactive?.debtor_name || invoice?.customer_name || invoice?.supplier_name}</strong></span>
-                <span className="text-zinc-500 font-mono">({invoice?.coactive?.debtor_tax_id || invoice?.customer_tax_id || invoice?.supplier_tax_id || 'N/D'})</span>
-                <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] font-mono text-zinc-400">
-                  Vigencia: {invoice?.coactive?.fiscal_year || '2024'}
-                </span>
-              </div>
-            </div>
-
-            {/* Right: Interactive Coactive Stage Selector */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] text-zinc-400 font-sans">Etapa Procesal:</span>
-              <div className="inline-flex items-center p-0.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/50">
-                {[
-                  { stage: 'persuasivo' as CoactiveStage, label: 'Persuasivo', activeClass: 'bg-sky-500 text-white font-bold' },
-                  { stage: 'mandamiento' as CoactiveStage, label: 'Mandamiento', activeClass: 'bg-amber-500 text-zinc-950 font-bold' },
-                  { stage: 'medidas_cautelares' as CoactiveStage, label: 'Embargos', activeClass: 'bg-purple-500 text-white font-bold' },
-                  { stage: 'acuerdo_pago' as CoactiveStage, label: 'Acuerdo', activeClass: 'bg-emerald-500 text-white font-bold' },
-                  { stage: 'recaudado' as CoactiveStage, label: 'Recaudado', activeClass: 'bg-teal-500 text-white font-bold' },
-                ].map((s) => {
-                  const isCurrent = coactiveStage === s.stage;
-                  return (
-                    <button
-                      key={s.stage}
-                      type="button"
-                      onClick={() => handleCoactiveStageChange(s.stage)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
-                        isCurrent
-                          ? `${s.activeClass} shadow-sm`
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* View Layout Tabs & Double-Entry Status Ribbon */}
-        <section className="w-full px-4 sm:px-6 py-2 bg-[#171618] border-b border-dashed border-[#444748]/30">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
-            <div className="inline-flex items-center p-1 rounded-xl bg-[#201f22] border border-dashed border-[#444748]/50 text-xs">
-              <button
-                type="button"
-                onClick={() => setActiveLayoutTab('items')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                  activeLayoutTab === 'items'
-                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-                title="Mostrar tabla completa de partidas desglosadas y asiento contable"
-              >
-                <span className="material-symbols-outlined text-[16px]">receipt_long</span>
-                <span>Partidas Desglosadas</span>
-                <span className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
-                  activeLayoutTab === 'items' ? 'bg-zinc-200 text-zinc-900 font-bold' : 'bg-zinc-800 text-zinc-400'
-                }`}>
-                  {items.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveLayoutTab('document')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                  activeLayoutTab === 'document'
-                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-                title="Visualizar documento original de la factura"
-              >
-                <span className="material-symbols-outlined text-[16px]">description</span>
-                <span>Documento Original</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveLayoutTab('split')}
-                className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                  activeLayoutTab === 'split'
-                    ? 'bg-white text-zinc-950 shadow-sm font-semibold'
-                    : 'text-zinc-400 hover:text-white'
-                }`}
-                title="Vista dividida: documento a la izquierda y desglose contable a la derecha"
-              >
-                <span className="material-symbols-outlined text-[16px]">vertical_split</span>
-                <span>Vista Dividida</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-mono">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border border-dashed ${
-                isBalanced
-                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
-                  : 'bg-amber-950/40 text-amber-300 border-amber-800/40'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isBalanced ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`}></span>
-                <span>{isBalanced ? 'Partida doble balanceada' : `Descuadre: ${discrepancy.toFixed(2)} €`}</span>
-              </span>
-            </div>
-          </div>
-        </section>
+        </header>
 
         {/* Dual Workspace Layout: Document Canvas + Line Allocation Engine */}
         <section className="w-full px-4 sm:px-6 py-4 sm:py-6 flex-1">
