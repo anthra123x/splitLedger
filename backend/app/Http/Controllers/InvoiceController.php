@@ -1545,9 +1545,27 @@ class InvoiceController extends Controller
         }
 
         $principal = (float) ($coactive['principal_amount'] ?? ($subtotal > 0 ? $subtotal : round($grandTotal * 0.70, 2)));
-        $interest = (float) ($coactive['interest_amount'] ?? ($taxTotal > 0 ? $taxTotal : round($grandTotal * 0.20, 2)));
-        $penalty = (float) ($coactive['penalty_amount'] ?? round($grandTotal * 0.07, 2));
-        $costs = (float) ($coactive['costs_amount'] ?? round($grandTotal * 0.03, 2));
+        $regime = $coactive['regime'] ?? 'dian_superfinanciera';
+
+        if (!isset($coactive['interest_amount'])) {
+            $dueDate = $invoice->due_date ?: ($invoice->invoice_date ?: date('Y-m-d', strtotime('-60 days')));
+            $calculator = app(\App\Services\CoactiveInterestCalculatorService::class);
+            $calcResult = $calculator->calculateInterest($principal, $dueDate, date('Y-m-d'), $regime);
+            $interest = $calcResult['interest_amount'];
+            $penalty = (float) ($coactive['penalty_amount'] ?? $calcResult['penalty_amount']);
+            $costs = (float) ($coactive['costs_amount'] ?? $calcResult['costs_amount']);
+            $daysInArrears = $calcResult['days_in_arrears'];
+            $weightedRate = $calcResult['weighted_annual_rate'];
+            $tranches = $calcResult['tranches'];
+        } else {
+            $interest = (float) $coactive['interest_amount'];
+            $penalty = (float) ($coactive['penalty_amount'] ?? round($grandTotal * 0.05, 2));
+            $costs = (float) ($coactive['costs_amount'] ?? round($grandTotal * 0.03, 2));
+            $daysInArrears = (int) ($coactive['days_in_arrears'] ?? 0);
+            $weightedRate = (float) ($coactive['weighted_annual_rate'] ?? 0.0);
+            $tranches = $coactive['tranches'] ?? [];
+        }
+
         $collected = (float) ($coactive['collected_amount'] ?? ($stage === 'recaudado' ? $grandTotal : ($stage === 'acuerdo_pago' ? round($grandTotal * 0.40, 2) : 0.0)));
         $pending = round(max(0, $grandTotal - $collected), 2);
 
@@ -1569,6 +1587,10 @@ class InvoiceController extends Controller
             'costs_amount' => $costs,
             'collected_amount' => $collected,
             'pending_balance' => $pending,
+            'regime' => $regime,
+            'days_in_arrears' => $daysInArrears,
+            'weighted_annual_rate' => $weightedRate,
+            'tranches' => $tranches,
             'last_action_date' => $coactive['last_action_date'] ?? ($invoice->updated_at ? $invoice->updated_at->format('Y-m-d') : date('Y-m-d')),
             'notes' => $coactive['notes'] ?? null,
         ];

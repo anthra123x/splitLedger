@@ -3,6 +3,7 @@ import { updateInvoice, fetchAccountingRules, fetchWorkspaces } from '../service
 import { exportInvoicePdf } from '../services/pdfExportService';
 import { Invoice, InvoiceItem, Workspace, CoactiveStage } from '../types/index.js';
 import ScanningAnimationCard from '../components/ScanningAnimationCard';
+import CoactiveLiquidationModal from '../components/CoactiveLiquidationModal';
 import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
 const DEFAULT_PGC_ACCOUNTS = [
@@ -87,6 +88,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   const [scanProgress, setScanProgress] = useState(25);
   const [scanStatusText, setScanStatusText] = useState('');
   const [showThinking, setShowThinking] = useState(false);
+  const [showLiquidationModal, setShowLiquidationModal] = useState(false);
   const [activeLayoutTab, setActiveLayoutTab] = useState<'split' | 'items' | 'document'>(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       return 'items';
@@ -512,6 +514,20 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                   )}
                   <span className="text-zinc-600 hidden sm:inline">•</span>
                   <span className="hidden sm:inline">Vigencia: <span className="font-mono text-zinc-300">{invoice?.coactive?.fiscal_year || '2026'}</span></span>
+                  {invoice?.coactive?.interest_amount !== undefined && (
+                    <>
+                      <span className="text-zinc-600 hidden sm:inline">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowLiquidationModal(true)}
+                        className="hidden sm:inline-flex items-center gap-1 font-mono text-amber-400 hover:text-amber-300 cursor-pointer underline decoration-dotted text-xs transition-colors"
+                        title="Ver liquidación detallada de intereses moratorios"
+                      >
+                        Mora: {invoice.coactive.interest_amount.toFixed(2)} €
+                        {invoice.coactive.days_in_arrears ? ` (${invoice.coactive.days_in_arrears} d)` : ''}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -532,6 +548,16 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowLiquidationModal(true)}
+                  className="bg-[#201f22] hover:bg-[#2a2a2c] text-white border border-dashed border-[#444748]/60 active:scale-95 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-sm inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Liquidación Oficial de Intereses Moratorios y Deuda Coactiva"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-amber-400">calculate</span>
+                  <span className="hidden sm:inline">Calcular Mora</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => exportInvoicePdf(invoice)}
@@ -1475,6 +1501,19 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
         </section>
 
       </div>
+
+      {showLiquidationModal && invoice && (
+        <CoactiveLiquidationModal
+          isOpen={showLiquidationModal}
+          onClose={() => setShowLiquidationModal(false)}
+          invoice={invoice}
+          onLiquidationApplied={(updatedInvoice) => {
+            if (onInvoiceUpdated) onInvoiceUpdated(updatedInvoice);
+            setSaveMessage('[OK] Intereses moratorios oficiales recalculados y guardados.');
+            setTimeout(() => setSaveMessage(''), 3500);
+          }}
+        />
+      )}
     </main>
   );
 }

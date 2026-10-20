@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\GoogleIntegrationController;
+use App\Http\Controllers\CoactiveDebtController;
 use Illuminate\Support\Facades\Route;
 
 // Health Check
@@ -53,6 +54,13 @@ Route::prefix('workspaces')->group(function () {
     Route::put('/{id}', [WorkspaceController::class, 'update']);
     Route::delete('/{id}', [WorkspaceController::class, 'destroy']);
     Route::post('/{id}/assign', [WorkspaceController::class, 'assignInvoices']);
+});
+
+// Coactive Debt & Official Moratory Interest Engine
+Route::prefix('coactive')->group(function () {
+    Route::get('/rates', [CoactiveDebtController::class, 'getRates']);
+    Route::post('/calculate-interest', [CoactiveDebtController::class, 'calculate']);
+    Route::post('/invoices/{id}/recalculate-interest', [CoactiveDebtController::class, 'recalculateForInvoice']);
 });
 
 // Engine Telemetry

@@ -1,4 +1,4 @@
-import { Invoice, SystemMetrics, EngineStats, Workspace, GoogleIntegrationStatus } from '../types/index.js';
+import { Invoice, SystemMetrics, EngineStats, Workspace, GoogleIntegrationStatus, CoactiveData, CoactiveLiquidationResult } from '../types/index.js';
 
 const API_BASE = '/api';
 
@@ -583,6 +583,55 @@ export async function fetchGmailInvoices(): Promise<{ status: string; message: s
     method: 'POST'
   });
   if (!res.ok) throw new Error('Error al comprobar facturas en Gmail');
+  return res.json();
+}
+
+// Coactive Debt & Official Moratory Interest Liquidation
+export async function fetchCoactiveRates(regime?: string): Promise<{ status: string; data: any }> {
+  const q = regime ? `?regime=${encodeURIComponent(regime)}` : '';
+  const res = await fetch(`${API_BASE}/coactive/rates${q}`);
+  if (!res.ok) throw new Error('Error al consultar tablas de tasas moratorias oficiales');
+  return res.json();
+}
+
+export async function calculateCoactiveInterest(payload: {
+  principal: number;
+  due_date: string;
+  calculation_date?: string;
+  regime?: 'dian_superfinanciera' | 'interes_demora_tributario';
+  penalty_percentage?: number;
+  costs_percentage?: number;
+}): Promise<{ status: string; data: CoactiveLiquidationResult }> {
+  const res = await fetch(`${API_BASE}/coactive/calculate-interest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al calcular intereses moratorios oficiales');
+  }
+  return res.json();
+}
+
+export async function recalculateInvoiceCoactiveInterest(
+  invoiceId: string,
+  payload?: {
+    calculation_date?: string;
+    regime?: 'dian_superfinanciera' | 'interes_demora_tributario';
+    penalty_percentage?: number;
+    costs_percentage?: number;
+  }
+): Promise<{ status: string; message: string; data: { invoice_id: string; liquidation: CoactiveLiquidationResult; coactive: CoactiveData } }> {
+  const res = await fetch(`${API_BASE}/coactive/invoices/${invoiceId}/recalculate-interest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {})
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Error al recalcular intereses de la factura');
+  }
   return res.json();
 }
 

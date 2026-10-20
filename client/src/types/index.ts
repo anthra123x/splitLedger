@@ -149,6 +149,44 @@ export type CoactiveStage = 'persuasivo' | 'mandamiento' | 'medidas_cautelares' 
 
 export type CoactiveDocumentType = 'titulo_ejecutivo' | 'mandamiento_pago' | 'acuerdo_pago' | 'factura_coactiva';
 
+export interface HistoricalRateItem {
+  id: string;
+  period_label: string;
+  start_date: string;
+  end_date: string;
+  effective_annual_rate: number;
+  daily_rate: number;
+  resolution_reference: string;
+}
+
+export interface HistoricalRateTranche {
+  period_id: string;
+  period_label: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  effective_annual_rate: number;
+  daily_rate: number;
+  interest_accrued: number;
+  resolution_reference: string;
+}
+
+export interface CoactiveLiquidationResult {
+  regime: 'dian_superfinanciera' | 'interes_demora_tributario';
+  regime_label: string;
+  principal_amount: number;
+  due_date: string;
+  calculation_date: string;
+  days_in_arrears: number;
+  interest_amount: number;
+  penalty_amount: number;
+  costs_amount: number;
+  total_coactive_debt: number;
+  weighted_annual_rate: number;
+  tranches: HistoricalRateTranche[];
+  legal_framework: string;
+}
+
 export interface CoactiveData {
   stage: CoactiveStage;
   document_type: CoactiveDocumentType;
@@ -163,6 +201,12 @@ export interface CoactiveData {
   costs_amount: number;
   collected_amount: number;
   pending_balance: number;
+  regime?: 'dian_superfinanciera' | 'interes_demora_tributario';
+  days_in_arrears?: number;
+  weighted_annual_rate?: number;
+  liquidation_date?: string;
+  tranches?: HistoricalRateTranche[];
+  legal_framework?: string;
   last_action_date?: string;
   notes?: string;
 }

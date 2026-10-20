@@ -66,9 +66,18 @@ class MetricsController extends Controller
                 }
 
                 $principal = (float) ($coactive['principal_amount'] ?? ($inv->subtotal > 0 ? $inv->subtotal : round($grand * 0.70, 2)));
-                $interest = (float) ($coactive['interest_amount'] ?? ($inv->tax_total > 0 ? $inv->tax_total : round($grand * 0.20, 2)));
-                $penalty = (float) ($coactive['penalty_amount'] ?? round($grand * 0.07, 2));
-                $costs = (float) ($coactive['costs_amount'] ?? round($grand * 0.03, 2));
+                if (!isset($coactive['interest_amount'])) {
+                    $dueDate = $inv->due_date ?: ($inv->invoice_date ?: date('Y-m-d', strtotime('-45 days')));
+                    $calculator = app(\App\Services\CoactiveInterestCalculatorService::class);
+                    $calcRes = $calculator->calculateInterest($principal, $dueDate, date('Y-m-d'), $coactive['regime'] ?? 'dian_superfinanciera');
+                    $interest = $calcRes['interest_amount'];
+                    $penalty = (float) ($coactive['penalty_amount'] ?? $calcRes['penalty_amount']);
+                    $costs = (float) ($coactive['costs_amount'] ?? $calcRes['costs_amount']);
+                } else {
+                    $interest = (float) $coactive['interest_amount'];
+                    $penalty = (float) ($coactive['penalty_amount'] ?? round($grand * 0.05, 2));
+                    $costs = (float) ($coactive['costs_amount'] ?? round($grand * 0.03, 2));
+                }
                 $collected = (float) ($coactive['collected_amount'] ?? ($stage === 'recaudado' ? $grand : ($stage === 'acuerdo_pago' ? round($grand * 0.40, 2) : 0.0)));
 
                 $principalSum += $principal;
