@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -11,6 +12,14 @@ class SplitLlmEngineService
     {
         $rawText = mb_convert_encoding($rawText, 'UTF-8', 'UTF-8');
         $filename = mb_convert_encoding($filename, 'UTF-8', 'UTF-8');
+
+        // Sub-second content-hash cache for instant re-reads
+        $cacheKey = 'split_llm_decomp_' . hash('sha256', $rawText);
+        $cached = Cache::get($cacheKey);
+        if ($cached && !empty($cached['invoice']) && !empty($cached['items'])) {
+            return $cached;
+        }
+
         $tokens = SpatialTokenizerService::tokenize($rawText);
         $extracted = null;
 
@@ -36,7 +45,8 @@ class SplitLlmEngineService
             try {
                 $response = Http::timeout(15)->post("{$aiEngineUrl}/api/v1/decompose", [
                     'raw_text' => $rawText,
-                    'document_name' => $filename
+                    'document_name' => $filename,
+                    'use_llm' => true
                 ]);
                 if ($response->successful()) {
                     $json = $response->json();
@@ -49,11 +59,11 @@ class SplitLlmEngineService
             }
         }
 
-        // 3. Remote Cognitive Inference via OpenRouter
+        // 3. Remote Cognitive Inference via OpenRouter with Multi-Model Cascading Fallback
         if (!$extracted) {
             $apiKey = env('OPENROUTER_API_KEY', '');
             if (!empty($apiKey)) {
-                $model = env('OPENROUTER_DEFAULT_MODEL', 'openrouter/free');
+                $model = env('OPENROUTER_DEFAULT_MODEL', 'minimax/minimax-m3.1-flash:free');
                 try {
                     $prompt = self::buildPrompt($rawText, $filename);
                     $response = Http::withHeaders([
@@ -61,8 +71,14 @@ class SplitLlmEngineService
                         'HTTP-Referer' => 'https://splitledger.app',
                         'X-Title' => 'SplitLedger Invoice Engine',
                         'Content-Type' => 'application/json'
-                    ])->timeout(6)->post('https://openrouter.ai/api/v1/chat/completions', [
+                    ])->timeout(12)->post('https://openrouter.ai/api/v1/chat/completions', [
                         'model' => $model,
+                        'models' => [
+                            $model,
+                            'minimax/minimax-m3.1-flash:free',
+                            'nvidia/nemotron-3.5-lightning:free',
+                            'google/gemma-4-26b-a4b-it:free'
+                        ],
                         'messages' => [
                             [
                                 'role' => 'system',
@@ -153,7 +169,7 @@ class SplitLlmEngineService
             'currency_conversion' => $extracted['currency_conversion'] ?? null
         ];
 
-        return [
+        $result = [
             'invoice' => array_merge([
                 'filename' => basename($filePath),
                 'original_name' => $filename,
@@ -193,6 +209,12 @@ class SplitLlmEngineService
             'temporal_analysis' => $extracted['temporal_analysis'] ?? null,
             'currency_conversion' => $extracted['currency_conversion'] ?? null
         ];
+
+        if (!empty($result['items'])) {
+            Cache::put($cacheKey, $result, now()->addDays(7));
+        }
+
+        return $result;
     }
 
     private static function buildPrompt(string $text, string $filename): string
@@ -289,7 +311,7 @@ PROMPT;
         }
 
         $dueDate = null;
-        if (preg_match('/(?:fecha\s*(?:de\s*)?vencimiento|vencimiento|due\s*date|fecha\s*l[íi]mite)\s*[:]\s*([0-9./-]+)/iu', $rawText, $mDue)) {
+        if (preg_match('~(?:fecha\s*(?:de\s*)?vencimiento|vencimiento|due\s*date|fecha\s*l[íi]mite)\s*[:]\s*([0-9./-]+)~iu', $rawText, $mDue)) {
             if (preg_match('~(\d{4}[-/.]\d{1,2}[-/.]\d{1,2})~', $mDue[1], $m)) {
                 $dueDate = str_replace(['/', '.'], '-', $m[1]);
             } elseif (preg_match('~(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})~', $mDue[1], $m)) {

@@ -65,7 +65,7 @@ engine = SplitReasonerEngine()
 class DecomposeTextRequest(BaseModel):
     raw_text: str
     document_name: str = "documento.txt"
-    use_llm: bool = False
+    use_llm: bool = True
 
 
 class BatchTextItem(BaseModel):
@@ -76,7 +76,7 @@ class BatchTextItem(BaseModel):
 class BatchDecomposeRequest(BaseModel):
     documents: List[BatchTextItem]
     generate_synthesis: bool = True
-    use_llm: bool = False
+    use_llm: bool = True
 
 
 class SqlQueryRequest(BaseModel):

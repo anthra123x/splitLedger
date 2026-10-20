@@ -40,7 +40,7 @@ class TemporalPunctualityEngine:
         s = raw_date.strip().lower()
 
         # 1. ISO 8601 estándar: YYYY-MM-DD o YYYY/MM/DD
-        iso_m = re.search(r"\b(20\d{2})[-/.](0[1-9]|1[0-2])[-/.](0[1-9]|[12]\d|3[01])\b", s)
+        iso_m = re.search(r"\b(19\d{2}|20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b", s)
         if iso_m:
             try:
                 return date(int(iso_m.group(1)), int(iso_m.group(2)), int(iso_m.group(3)))
@@ -48,7 +48,7 @@ class TemporalPunctualityEngine:
                 pass
 
         # 2. Formato Europeo: DD/MM/YYYY o DD-MM-YYYY
-        eu_m = re.search(r"\b(0[1-9]|[12]\d|3[01])[-/.](0[1-9]|1[0-2])[-/.](20\d{2})\b", s)
+        eu_m = re.search(r"\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.](19\d{2}|20\d{2})\b", s)
         if eu_m:
             try:
                 return date(int(eu_m.group(3)), int(eu_m.group(2)), int(eu_m.group(1)))
@@ -56,7 +56,7 @@ class TemporalPunctualityEngine:
                 pass
 
         # 3. Formato textual español: "15 de octubre de 2026" o "15 oct 2026"
-        txt_es = re.search(r"(\d{1,2})\s*(?:de)?\s*([a-záéíóú]+)\s*(?:de)?\s*(20\d{2})", s)
+        txt_es = re.search(r"(\d{1,2})\s*(?:de)?\s*([a-záéíóú]+)\s*(?:de)?\s*(19\d{2}|20\d{2})", s)
         if txt_es:
             day = int(txt_es.group(1))
             m_str = txt_es.group(2).lower()

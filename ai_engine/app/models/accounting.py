@@ -59,6 +59,8 @@ def generate_double_entry_seat(
     Haber: Retención IRPF (475100) + Proveedor/Acreedor (400000 / 410000)
     """
     from .schemas import JournalEntryLine, DoubleEntrySeat
+    supplier_name = str(supplier_name or "Proveedor")
+    invoice_number = str(invoice_number or "INV-000")
     lines = []
     total_debit = 0.0
     total_credit = 0.0

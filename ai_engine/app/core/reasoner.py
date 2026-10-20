@@ -10,31 +10,34 @@ from .tax_id_validator import FiscalTaxIdValidator
 
 
 SYSTEM_REASONING_PROMPT = """Eres Split-Reasoner, el motor de razonamiento cognitivo y auditoría forense contable neuro-simbólica.
-Tu tarea es descomponer y auditar exhaustivamente documentos contables, facturas complejas, cuadros de impuestos multi-tramo y tablas financieras.
+Tu tarea es descomponer y auditar exhaustivamente facturas de cualquier tipo (SaaS internacional, telecomunicaciones, suministros, tickets TPV, honorarios de autónomos con retención IRPF, y expedientes administrativos de apremio/cobro coactivo).
 
-DEBES SEGUIR UN PROCESO DE PENSAMIENTO ESTRICTO EN DOS PASOS:
-
-PASO 1: Genera tu traza de razonamiento exhaustiva dentro de las etiquetas <think> y </think>:
-1. [Identificación de Entidades]: Emisor (proveedor, NIF/CIF), Receptor (cliente, NIF/CIF), fechas y número de factura.
-2. [Segmentación Multitasa]: Desglosa cada concepto, cantidad, precio unitario, base imponible y tipo impositivo (IVA 21%, 10%, 4%, 0%, o Recargo de Equivalencia 5.2%, 1.4%, 0.5%).
-3. [Clasificación PGC]: Asigna cuenta contable oficial (628 suministros, 629 telecom/software, 623 profesionales, 600 compras, etc.).
-4. [Auditoría Matemática y Retenciones]: Suma de bases por tipo impositivo, retención IRPF (si cuenta 623 profesionales).
-5. [Ecuación de Partida Doble]: Verifica subtotal + tax_total - retention_total == grand_total. Si detectas contradicción o redondeo, documenta la discrepancia residual.
-
-PASO 2: Emite ÚNICAMENTE el objeto JSON final sin preámbulos:
+DEBES DEVOLVER ÚNICAMENTE UN OBJETO JSON VÁLIDO CON EL SIGUIENTE ESQUEMA:
 {
-  "invoice_number": "...",
-  "supplier_name": "...",
-  "supplier_tax_id": "...",
-  "supplier_address": "...",
-  "customer_name": "...",
-  "customer_tax_id": "...",
-  "customer_address": "...",
+  "thinking_process": "1. Identificación de emisor y receptor... 2. Desglose de partidas... 3. Cuadratura: subtotal + tax_total - retention_total == grand_total...",
+  "invoice_number": "cadena con número de factura o expediente",
+  "supplier_name": "nombre o razón social del emisor (limpio, sin incluir NIF ni etiquetas)",
+  "supplier_tax_id": "NIF / CIF / VAT ID del emisor",
+  "supplier_address": "dirección del emisor",
+  "supplier_postal_code": "código postal emisor o null",
+  "supplier_city": "ciudad emisor o null",
+  "supplier_email": "email emisor o null",
+  "supplier_phone": "teléfono emisor o null",
+  "customer_name": "nombre o razón social del cliente / destinatario (limpio)",
+  "customer_tax_id": "NIF / CIF del cliente",
+  "customer_address": "dirección del cliente",
+  "customer_postal_code": "código postal cliente o null",
+  "customer_city": "ciudad cliente o null",
+  "customer_email": "email cliente o null",
+  "customer_phone": "teléfono cliente o null",
   "invoice_date": "YYYY-MM-DD",
   "due_date": "YYYY-MM-DD",
+  "payment_method": "Transferencia Bancaria | Domiciliación | Tarjeta | etc.",
+  "iban": "ES0000000000000000000000 o null",
   "currency": "EUR" | "USD" | "GBP",
   "subtotal": 0.00,
   "tax_total": 0.00,
+  "surcharge_total": 0.00,
   "retention_total": 0.00,
   "grand_total": 0.00,
   "tax_breakdown": [
@@ -48,7 +51,7 @@ PASO 2: Emite ÚNICAMENTE el objeto JSON final sin preámbulos:
   ],
   "items": [
     {
-      "concept": "...",
+      "concept": "descripción de la partida",
       "quantity": 1.0,
       "unit_price": 0.00,
       "base_amount": 0.00,
@@ -56,11 +59,19 @@ PASO 2: Emite ÚNICAMENTE el objeto JSON final sin preámbulos:
       "tax_amount": 0.00,
       "total_amount": 0.00,
       "account_code": "629000",
-      "account_name": "...",
-      "cost_center": "..."
+      "account_name": "Otros servicios",
+      "cost_center": "GENERAL"
     }
-  ]
+  ],
+  "coactive_dockets": []
 }
+
+Reglas forenses esenciales:
+1. En facturas de profesionales autónomos con retención IRPF (ej. -15%), retention_total debe ser el importe POSITIVO de la retención.
+2. Ecuación de cuadratura contable estricta: subtotal + tax_total + surcharge_total - retention_total == grand_total.
+3. Extrae todas y cada una de las partidas detalladas en el documento sin agruparlas ni perder fidelidad.
+4. Las fechas deben normalizarse en formato ISO YYYY-MM-DD.
+5. No devuelvas markdown, ni ```json, solo el objeto JSON directo.
 """
 
 
@@ -101,8 +112,16 @@ class SplitReasoner:
         thinking_trace = ""
         extracted_data: Optional[Dict[str, Any]] = None
 
+        # 0. Cache check for 0ms sub-second re-processing
+        import hashlib
+        cache_key = hashlib.sha256(f"{raw_text.strip()}:{use_llm}".encode("utf-8")).hexdigest()
+        if cache_key in cls._CACHE_DECOMPOSE:
+            cached_d, cached_t = cls._CACHE_DECOMPOSE[cache_key]
+            extracted_data = dict(cached_d)
+            thinking_trace = cached_t
+
         # 1. Intentar inferencia neuronal si está habilitada y hay API Key configurada
-        if use_llm and (config.openrouter_api_key or config.gemini_api_key):
+        if not extracted_data and use_llm and (config.openrouter_api_key or config.gemini_api_key):
             try:
                 extracted_data, thinking_trace = await cls._call_llm_reasoner(raw_text, document_name)
             except Exception as e:
@@ -115,6 +134,9 @@ class SplitReasoner:
                 thinking_trace = fallback_thinking
             else:
                 thinking_trace += "\n" + fallback_thinking
+
+        if extracted_data and cache_key not in cls._CACHE_DECOMPOSE:
+            cls._CACHE_DECOMPOSE[cache_key] = (extracted_data, thinking_trace)
 
         # 3. Construir modelo Pydantic
         items = []
@@ -203,9 +225,9 @@ class SplitReasoner:
         multi_tax_detected = len(tax_breakdown) > 1
 
         # 5. Generación del Asiento Contable PGC
-        inv_num = extracted_data.get("invoice_number", f"INV-{document_name[:8]}")
-        inv_date = extracted_data.get("invoice_date", "2026-10-15")
-        supp_name = extracted_data.get("supplier_name", "Proveedor")
+        inv_num = str(extracted_data.get("invoice_number") or f"INV-{document_name[:8]}")
+        inv_date = str(extracted_data.get("invoice_date") or "2026-10-15")
+        supp_name = str(extracted_data.get("supplier_name") or "Proveedor")
         journal_entry = generate_double_entry_seat(
             invoice_number=inv_num,
             date=inv_date,
@@ -274,18 +296,18 @@ class SplitReasoner:
             invoice_number=inv_num,
             supplier_name=supp_name,
             supplier_tax_id=supp_tax_id,
-            supplier_address=extracted_data.get("supplier_address", ""),
-            supplier_postal_code=extracted_data.get("supplier_postal_code", ""),
-            supplier_city=extracted_data.get("supplier_city", ""),
-            supplier_email=extracted_data.get("supplier_email", ""),
-            supplier_phone=extracted_data.get("supplier_phone", ""),
-            customer_name=extracted_data.get("customer_name", "SplitLedger Labs"),
+            supplier_address=extracted_data.get("supplier_address") or "",
+            supplier_postal_code=extracted_data.get("supplier_postal_code") or "",
+            supplier_city=extracted_data.get("supplier_city") or "",
+            supplier_email=extracted_data.get("supplier_email") or "",
+            supplier_phone=extracted_data.get("supplier_phone") or "",
+            customer_name=extracted_data.get("customer_name") or "SplitLedger Labs",
             customer_tax_id=cust_tax_id,
-            customer_address=extracted_data.get("customer_address", "Madrid, España"),
-            customer_postal_code=extracted_data.get("customer_postal_code", ""),
-            customer_city=extracted_data.get("customer_city", ""),
-            customer_email=extracted_data.get("customer_email", ""),
-            customer_phone=extracted_data.get("customer_phone", ""),
+            customer_address=extracted_data.get("customer_address") or "Madrid, España",
+            customer_postal_code=extracted_data.get("customer_postal_code") or "",
+            customer_city=extracted_data.get("customer_city") or "",
+            customer_email=extracted_data.get("customer_email") or "",
+            customer_phone=extracted_data.get("customer_phone") or "",
             invoice_date=inv_date,
             due_date=due_date,
             payment_method=extracted_data.get("payment_method"),
@@ -293,7 +315,7 @@ class SplitReasoner:
             currency=curr,
             subtotal=round(subtotal, 2),
             tax_total=round(tax_total, 2),
-            surcharge_total=round(float(extracted_data.get("surcharge_total", 0.0)), 2),
+            surcharge_total=round(float(extracted_data.get("surcharge_total") or 0.0), 2),
             retention_total=round(retention_total, 2),
             grand_total=round(grand_total, 2),
             is_balanced=is_balanced,
@@ -312,6 +334,8 @@ class SplitReasoner:
             audit_notes=audit_notes
         )
 
+    _CACHE_DECOMPOSE: Dict[str, Tuple[Dict[str, Any], str]] = {}
+
     @classmethod
     async def _call_llm_reasoner(
         cls,
@@ -327,17 +351,29 @@ class SplitReasoner:
             "Content-Type": "application/json"
         }
 
+        # Multi-model resilient cascading fallback array
+        models_candidate = [
+            config.openrouter_model,
+            "minimax/minimax-m3.1-flash:free",
+            "nvidia/nemotron-3.5-lightning:free",
+            "google/gemma-4-26b-a4b-it:free"
+        ]
+        unique_models = list(dict.fromkeys([m for m in models_candidate if m]))
+
         payload = {
-            "model": config.openrouter_model,
+            "model": unique_models[0],
+            "models": unique_models,
             "messages": [
                 {"role": "system", "content": SYSTEM_REASONING_PROMPT},
                 {"role": "user", "content": user_prompt}
             ],
             "temperature": config.temperature,
-            "max_tokens": config.max_tokens
+            "max_tokens": config.max_tokens,
+            "response_format": {"type": "json_object"}
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        limits = httpx.Limits(max_keepalive_connections=10, max_connections=30)
+        async with httpx.AsyncClient(limits=limits, timeout=14.0) as client:
             response = await client.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
             response.raise_for_status()
             data = response.json()
@@ -356,9 +392,11 @@ class SplitReasoner:
                 raise ValueError("El modelo no devolvió un bloque JSON válido.")
 
             extracted = json.loads(json_match.group(0))
+            if not thinking and extracted.get("thinking_process"):
+                thinking = str(extracted.get("thinking_process")).strip()
+
             return extracted, thinking
 
-    @classmethod
     @classmethod
     def _algorithmic_reasoning(cls, raw_text: str, filename: str) -> Tuple[Dict[str, Any], str]:
         """
@@ -408,22 +446,27 @@ class SplitReasoner:
 
         # 3. Fechas de expedición y vencimiento
         def _parse_date_string(date_str: str) -> str:
-            m_eur = re.search(r'(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})', date_str)
-            if m_eur:
-                d, m, y = m_eur.group(1), m_eur.group(2), m_eur.group(3)
-                if len(y) == 2:
-                    y = "20" + y
-                return f"{y}-{int(m):02d}-{int(d):02d}"
-            m_iso = re.search(r'(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})', date_str)
+            # ISO 8601 YYYY-MM-DD evaluated FIRST to prevent inverting 2026-10-06 into 2006-10-26
+            m_iso = re.search(r'\b(19\d{2}|20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b', date_str)
             if m_iso:
                 return f"{m_iso.group(1)}-{int(m_iso.group(2)):02d}-{int(m_iso.group(3)):02d}"
+            # European DD/MM/YYYY or DD-MM-YYYY
+            m_eur = re.search(r'\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.](19\d{2}|20\d{2})\b', date_str)
+            if m_eur:
+                d, m, y = m_eur.group(1), m_eur.group(2), m_eur.group(3)
+                return f"{y}-{int(m):02d}-{int(d):02d}"
+            # Short year DD/MM/YY
+            m_short = re.search(r'\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.](\d{2})\b', date_str)
+            if m_short:
+                d, m, y = m_short.group(1), m_short.group(2), "20" + m_short.group(3)
+                return f"{y}-{int(m):02d}-{int(d):02d}"
             return "2026-10-15"
 
         m_inv_date = re.search(r'(?:fecha\s*(?:de\s*)?(?:factura|emisi[oó]n|expedici[oó]n)?|date)\s*[:]\s*([0-9./-]+)', raw_text, re.I)
         if m_inv_date:
             invoice_date = _parse_date_string(m_inv_date.group(1))
         else:
-            m_any_date = re.search(r'\b(\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b', raw_text)
+            m_any_date = re.search(r'\b((?:19|20)\d{2}[-/.]0?[1-9]|1[0-2][-/.]0?[1-9]|[12]\d|3[01]|(?:0?[1-9]|[12]\d|3[01])[-/.](?:0?[1-9]|1[0-2])[-/.](?:19|20)?\d{2})\b', raw_text)
             invoice_date = _parse_date_string(m_any_date.group(1)) if m_any_date else "2026-10-15"
 
         m_due_date = re.search(r'(?:fecha\s*(?:de\s*)?vencimiento|vencimiento|due\s*date|fecha\s*l[íi]mite)\s*[:]\s*([0-9./-]+)', raw_text, re.I)
@@ -442,6 +485,12 @@ class SplitReasoner:
         thinking_steps.append(f"5. [NIF/CIF]: Emisor -> {supplier_tax_id}, Cliente -> {customer_tax_id}.")
 
         # 5. Proveedor / Razón Social y Cliente
+        def _clean_entity_name(name: str) -> str:
+            name = re.sub(r'\(.*?\)', '', name)
+            name = re.sub(r'\s*(?:nif|cif|nie|vat\s*id|tax\s*id)\s*[:]?\s*[0-9A-Za-z]+.*$', '', name, flags=re.I)
+            name = re.sub(r'\s*(?:tel|email|correo|direcci[oó]n|calle|c/|avda|av\.|plaza)\b.*$', '', name, flags=re.I)
+            return name.strip(" ,.-:\t\r\n")
+
         supplier_name = ""
         customer_name = ""
         supplier_address = ""
@@ -466,6 +515,7 @@ class SplitReasoner:
 
             cleaned_line = re.sub(r'(?:fecha\s*(?:de\s*)?(?:factura|emisi[oó]n|expedici[oó]n|vencimiento)?\s*[:]?\s*)?\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}', '', stripped, flags=re.I).strip()
             cleaned_line = re.sub(r'^(?:cliente|destinatario|facturar\s+a)\s*[:]?\s*', '', cleaned_line, flags=re.I).strip()
+            cleaned_line = _clean_entity_name(cleaned_line)
             if len(re.findall(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ]', cleaned_line)) >= 4:
                 clean_nominal_lines.append(cleaned_line)
 
@@ -473,24 +523,24 @@ class SplitReasoner:
             first_nom = clean_nominal_lines[0]
             comp_idx = first_nom.lower().find("empresa")
             if comp_idx > 5:
-                supplier_name = first_nom[:comp_idx].strip()
-                customer_name = first_nom[comp_idx:].strip()
+                supplier_name = _clean_entity_name(first_nom[:comp_idx])
+                customer_name = _clean_entity_name(first_nom[comp_idx:])
             elif re.search(r'\bS\.?\s*[LA]\.?', first_nom):
                 parts = re.split(r'\s{2,}|\t', first_nom)
                 if len(parts) >= 2:
-                    supplier_name = parts[0].strip()
-                    customer_name = parts[1].strip()
+                    supplier_name = _clean_entity_name(parts[0])
+                    customer_name = _clean_entity_name(parts[1])
                 else:
-                    supplier_name = first_nom
+                    supplier_name = _clean_entity_name(first_nom)
             else:
-                supplier_name = first_nom
+                supplier_name = _clean_entity_name(first_nom)
                 if len(clean_nominal_lines) > 1:
-                    customer_name = clean_nominal_lines[1]
+                    customer_name = _clean_entity_name(clean_nominal_lines[1])
 
         if not supplier_name:
             supp_explicit = re.search(r'(?:proveedor|emisor|empresa|raz[oó]n\s+social|vendor)\s*[:]\s*([^\n\r|]{3,60})', raw_text, re.I)
             if supp_explicit:
-                supplier_name = re.sub(r'\(.*?\)', '', supp_explicit.group(1)).strip()
+                supplier_name = _clean_entity_name(supp_explicit.group(1))
 
         if not supplier_name:
             supplier_name = "Proveedor General S.L."
@@ -498,7 +548,7 @@ class SplitReasoner:
         if not customer_name:
             cust_explicit = re.search(r'(?:cliente|destinatario|facturar\s+a|customer)\s*[:]\s*([^\n\r|]{3,60})', raw_text, re.I)
             if cust_explicit:
-                customer_name = re.sub(r'\(.*?\)', '', cust_explicit.group(1)).strip()
+                customer_name = _clean_entity_name(cust_explicit.group(1))
             else:
                 customer_name = "SplitLedger Labs"
 

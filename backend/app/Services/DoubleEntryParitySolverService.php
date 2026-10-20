@@ -34,12 +34,13 @@ class DoubleEntryParitySolverService
         unset($item);
 
         $retentionTotal = floatval($header['retention_total'] ?? 0);
+        $surchargeTotal = floatval($header['surcharge_total'] ?? 0);
         $declaredSubtotal = floatval($header['subtotal'] ?? $sumBase);
         $declaredTax = floatval($header['tax_total'] ?? $sumTax);
-        $targetGrandTotal = floatval($header['grand_total'] ?? ($declaredSubtotal + $declaredTax - $retentionTotal));
+        $targetGrandTotal = floatval($header['grand_total'] ?? ($declaredSubtotal + $declaredTax + $surchargeTotal - $retentionTotal));
 
-        // Theoretical expected grand total: Subtotal + Tax - Retention
-        $expectedGrand = round($declaredSubtotal + $declaredTax - $retentionTotal, 2);
+        // Theoretical expected grand total: Subtotal + Tax + Surcharge - Retention
+        $expectedGrand = round($declaredSubtotal + $declaredTax + $surchargeTotal - $retentionTotal, 2);
         $delta = round($targetGrandTotal - $expectedGrand, 2);
         $adjusted = false;
         $log = null;

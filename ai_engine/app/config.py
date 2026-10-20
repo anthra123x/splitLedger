@@ -22,7 +22,7 @@ class EngineConfig(BaseModel):
 
     # LLM Providers for Reasoning & Dataset Generation
     openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
-    openrouter_model: str = os.getenv("OPENROUTER_DEFAULT_MODEL", "google/gemini-2.5-flash")
+    openrouter_model: str = os.getenv("OPENROUTER_DEFAULT_MODEL", "minimax/minimax-m3.1-flash:free")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
 
     # Local / Fine-Tuned Model Configuration

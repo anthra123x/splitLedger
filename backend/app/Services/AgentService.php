@@ -42,7 +42,7 @@ class AgentService
 
         // 2. Attempt LLM call via OpenRouter
         $apiKey = env('OPENROUTER_API_KEY', '');
-        $model = env('OPENROUTER_DEFAULT_MODEL', 'openrouter/free');
+        $model = env('OPENROUTER_DEFAULT_MODEL', 'minimax/minimax-m3.1-flash:free');
 
         if (!empty($apiKey)) {
             try {
@@ -136,6 +136,12 @@ RULES;
             'Content-Type' => 'application/json'
         ])->timeout(20)->post('https://openrouter.ai/api/v1/chat/completions', [
             'model' => $model,
+            'models' => [
+                $model,
+                'minimax/minimax-m3.1-flash:free',
+                'nvidia/nemotron-3.5-lightning:free',
+                'google/gemma-4-26b-a4b-it:free'
+            ],
             'messages' => $messages,
             'temperature' => 0.2,
             'response_format' => ['type' => 'json_object']

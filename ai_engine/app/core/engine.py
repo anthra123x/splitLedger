@@ -17,7 +17,7 @@ class SplitReasonerEngine:
         self,
         raw_text: str,
         filename: str = "documento",
-        use_llm: bool = False
+        use_llm: bool = True
     ) -> DecomposedInvoice:
         """
         Descompone un documento individual ejecutando la traza de pensamiento CoT (Chain of Thought).
