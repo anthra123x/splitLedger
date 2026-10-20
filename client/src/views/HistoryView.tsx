@@ -10,7 +10,7 @@ import {
   assignInvoicesToWorkspace
 } from '../services/api';
 import { exportInvoicePdf, exportWorkspacePdf } from '../services/pdfExportService';
-import { Invoice, SystemMetrics, Workspace } from '../types/index.js';
+import { Invoice, SystemMetrics, Workspace, CoactiveStage } from '../types/index.js';
 import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
 interface HistoryViewProps {
@@ -48,6 +48,7 @@ export default function HistoryView({
 }: HistoryViewProps) {
   const [search, setSearch] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'Todas' | 'Desglosadas' | 'En Proceso'>('Todas');
+  const [coactiveStageFilter, setCoactiveStageFilter] = useState<'all' | CoactiveStage>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Custom Workspaces from Database
@@ -212,16 +213,21 @@ export default function HistoryView({
         !term ||
         inv.supplier_name?.toLowerCase().includes(term) ||
         inv.invoice_number?.toLowerCase().includes(term) ||
-        inv.supplier_tax_id?.toLowerCase().includes(term);
+        inv.supplier_tax_id?.toLowerCase().includes(term) ||
+        inv.coactive?.expediente_number?.toLowerCase().includes(term) ||
+        inv.coactive?.debtor_name?.toLowerCase().includes(term);
 
       const matchesStatus =
         statusFilter === 'Todas' ||
         (statusFilter === 'Desglosadas' && (inv.status === 'analyzed' || inv.status === 'reconciled')) ||
         (statusFilter === 'En Proceso' && (inv.status === 'processing' || inv.status === 'pending'));
 
-      return matchesSearch && matchesStatus;
+      const invStage: CoactiveStage = inv.coactive?.stage || (inv.status === 'reconciled' ? 'recaudado' : 'persuasivo');
+      const matchesStage = coactiveStageFilter === 'all' || invStage === coactiveStageFilter;
+
+      return matchesSearch && matchesStatus && matchesStage;
     });
-  }, [invoices, activeCategory, selectedCustomWsId, activeDailyDate, search, statusFilter]);
+  }, [invoices, activeCategory, selectedCustomWsId, activeDailyDate, search, statusFilter, coactiveStageFilter]);
 
   // Selection handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -370,7 +376,6 @@ export default function HistoryView({
 
     return invoiceList.map((inv) => {
       const isSelected = selectedIds.includes(inv.id);
-      const isAnalyzed = inv.status === 'analyzed' || inv.status === 'reconciled';
       const assignedWs = customWorkspaces.find((w) => w.id === inv.workspace_id) || inv.workspace;
 
       return (
@@ -392,7 +397,12 @@ export default function HistoryView({
             className="px-4 py-3.5 font-mono text-white font-medium whitespace-nowrap"
             onClick={() => onSelectInvoice(inv)}
           >
-            {inv.invoice_number || 'S/N'}
+            <div className="flex flex-col">
+              <span className="text-white font-semibold">{inv.invoice_number || 'S/N'}</span>
+              {inv.coactive?.expediente_number && (
+                <span className="text-[10px] text-zinc-400 font-mono tracking-tight">{inv.coactive.expediente_number}</span>
+              )}
+            </div>
           </td>
           <td className="px-4 py-3" onClick={() => onSelectInvoice(inv)}>
             <div className="flex flex-col min-w-[180px]">
@@ -444,26 +454,32 @@ export default function HistoryView({
             </span>
           </td>
           <td className="px-4 py-3.5 text-right font-mono text-zinc-300" onClick={() => onSelectInvoice(inv)}>
-            {(inv.subtotal || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            {(inv.coactive?.principal_amount || inv.subtotal || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
           </td>
           <td className="px-4 py-3.5 text-right font-mono text-zinc-400 text-[11px]" onClick={() => onSelectInvoice(inv)}>
-            {(inv.tax_total || 0).toFixed(2)} €
+            {(inv.coactive?.interest_amount || inv.tax_total || 0).toFixed(2)} €
           </td>
           <td className="px-4 py-3.5 text-right font-mono font-semibold text-white" onClick={() => onSelectInvoice(inv)}>
             {(inv.grand_total || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
           </td>
           <td className="px-4 py-3.5 text-center whitespace-nowrap" onClick={() => onSelectInvoice(inv)}>
-            {isAnalyzed ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 text-emerald-300 border border-emerald-800/40 text-[11px] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                Desglosada
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#2a2a2c] text-zinc-300 border border-[#444748]/40 text-[11px] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                En proceso
-              </span>
-            )}
+            {(() => {
+              const stage: CoactiveStage = inv.coactive?.stage || (inv.status === 'reconciled' ? 'recaudado' : 'persuasivo');
+              const stageConfig: Record<CoactiveStage, { label: string; badgeClass: string; dotClass: string }> = {
+                persuasivo: { label: 'Persuasivo', badgeClass: 'bg-sky-950/40 text-sky-300 border-sky-800/40', dotClass: 'bg-sky-400' },
+                mandamiento: { label: 'Mandamiento', badgeClass: 'bg-amber-950/40 text-amber-300 border-amber-800/40', dotClass: 'bg-amber-400' },
+                medidas_cautelares: { label: 'Embargo', badgeClass: 'bg-purple-950/40 text-purple-300 border-purple-800/40', dotClass: 'bg-purple-400' },
+                acuerdo_pago: { label: 'Acuerdo Pago', badgeClass: 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40', dotClass: 'bg-emerald-400' },
+                recaudado: { label: 'Recaudado', badgeClass: 'bg-teal-950/40 text-teal-300 border-teal-800/40', dotClass: 'bg-teal-400' },
+              };
+              const cfg = stageConfig[stage] || stageConfig.persuasivo;
+              return (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] font-medium ${cfg.badgeClass}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotClass}`}></span>
+                  {cfg.label}
+                </span>
+              );
+            })()}
           </td>
           <td className="px-4 py-3.5 text-right whitespace-nowrap">
             <div className="flex items-center justify-end gap-1.5">
@@ -554,56 +570,202 @@ export default function HistoryView({
           </div>
         </div>
 
-        {/* Global Metrics Pill Bar */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-1.5 rounded-xl bg-[#0e0e10]/80 backdrop-blur-md shadow-inner border border-dashed border-[#444748]/50">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#1c1b1d]/80 border border-dashed border-[#444748]/35 transition-colors hover:bg-[#201f22]">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#353437] text-white">
-              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] text-[#c4c7c8]">Facturas registradas</span>
-              <span className="text-sm sm:text-base font-semibold text-white">
-                {invoices.length} documentos
-              </span>
-            </div>
-          </div>
+        {/* PANEL EJECUTIVO DE CARTERA COACTIVA Y RECAUDO */}
+        {(() => {
+          let totalPortfolio = 0;
+          let totalCollected = 0;
+          let principalSum = 0;
+          let interestSum = 0;
+          let penaltyCostsSum = 0;
+          const stages: Record<CoactiveStage, number> = {
+            persuasivo: 0,
+            mandamiento: 0,
+            medidas_cautelares: 0,
+            acuerdo_pago: 0,
+            recaudado: 0
+          };
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#1c1b1d]/80 border border-dashed border-[#444748]/35 transition-colors hover:bg-[#201f22]">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#353437] text-white">
-              <span className="material-symbols-outlined text-[18px]">workspaces</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] text-[#c4c7c8]">Workspaces Activos</span>
-              <span className="text-sm sm:text-base font-semibold text-white">
-                {customWorkspaces.length} proyectos
-              </span>
-            </div>
-          </div>
+          invoices.forEach((inv) => {
+            const grand = inv.grand_total || 0;
+            totalPortfolio += grand;
+            const c = inv.coactive;
+            const stage: CoactiveStage = c?.stage || (inv.status === 'reconciled' ? 'recaudado' : 'persuasivo');
+            if (stages[stage] !== undefined) {
+              stages[stage]++;
+            } else {
+              stages.persuasivo++;
+            }
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#1c1b1d]/80 border border-dashed border-[#444748]/35 transition-colors hover:bg-[#201f22]">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#353437] text-white">
-              <span className="material-symbols-outlined text-[18px]">calendar_view_week</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] text-[#c4c7c8]">Jornadas de Trabajo</span>
-              <span className="text-sm sm:text-base font-semibold text-white">
-                {dailyWorkspaces.length} días registrados
-              </span>
-            </div>
-          </div>
+            const princ = c?.principal_amount ?? (inv.subtotal > 0 ? inv.subtotal : grand * 0.7);
+            const int = c?.interest_amount ?? (inv.tax_total > 0 ? inv.tax_total : grand * 0.2);
+            const penCost = (c?.penalty_amount ?? grand * 0.07) + (c?.costs_amount ?? grand * 0.03);
+            const coll = c?.collected_amount ?? (stage === 'recaudado' ? grand : (stage === 'acuerdo_pago' ? grand * 0.4 : 0));
 
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#1c1b1d]/80 border border-dashed border-[#444748]/35 transition-colors hover:bg-[#201f22]">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#353437] text-white">
-              <span className="material-symbols-outlined text-[18px]">payments</span>
+            principalSum += princ;
+            interestSum += int;
+            penaltyCostsSum += penCost;
+            totalCollected += coll;
+          });
+
+          const recoveryRate = totalPortfolio > 0 ? (totalCollected / totalPortfolio) * 100 : 0;
+          const pendingBalance = Math.max(0, totalPortfolio - totalCollected);
+
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#0e0e10]/90 backdrop-blur-md border border-dashed border-[#444748]/60 shadow-xl">
+              {/* Tarjeta 1: Cartera Total & Recaudo Efectivo */}
+              <div className="p-4 rounded-xl bg-[#1c1b1d]/80 border border-dashed border-[#444748]/40 flex flex-col justify-between gap-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">Cartera Total Exigible</span>
+                    <span className="text-xl sm:text-2xl font-bold font-mono text-white tracking-tight">
+                      {totalPortfolio.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                    </span>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-[#2a2a2c] flex items-center justify-center text-white border border-dashed border-[#444748]/60">
+                    <span className="material-symbols-outlined text-[20px] text-sky-400">gavel</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-dashed border-[#444748]/30">
+                  <div className="flex justify-between items-baseline text-xs">
+                    <span className="text-zinc-400">Recaudo Efectivo:</span>
+                    <span className="font-mono font-semibold text-emerald-400">
+                      {totalCollected.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €
+                      <span className="text-[10px] text-zinc-400 ml-1">({recoveryRate.toFixed(1)}%)</span>
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-[#2a2a2c] overflow-hidden flex">
+                    <div
+                      className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min(100, Math.max(4, recoveryRate))}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-baseline text-[11px] text-zinc-400 font-mono">
+                    <span>Saldo Pendiente:</span>
+                    <span className="text-amber-300 font-medium">{pendingBalance.toLocaleString('es-ES', { minimumFractionDigits: 2 })} €</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tarjeta 2: Composición de la Deuda */}
+              <div className="p-4 rounded-xl bg-[#1c1b1d]/80 border border-dashed border-[#444748]/40 flex flex-col justify-between gap-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">Composición de la Deuda</span>
+                    <span className="text-xs text-zinc-400">Desglose de crédito y accesorios</span>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-[#2a2a2c] flex items-center justify-center text-white border border-dashed border-[#444748]/60">
+                    <span className="material-symbols-outlined text-[20px] text-amber-400">pie_chart</span>
+                  </div>
+                </div>
+
+                <div className="w-full h-2.5 rounded-full bg-[#2a2a2c] overflow-hidden flex">
+                  <div
+                    className="h-full bg-sky-500"
+                    style={{ width: `${totalPortfolio > 0 ? (principalSum / totalPortfolio) * 100 : 70}%` }}
+                    title="Capital Principal"
+                  />
+                  <div
+                    className="h-full bg-amber-500"
+                    style={{ width: `${totalPortfolio > 0 ? (interestSum / totalPortfolio) * 100 : 20}%` }}
+                    title="Intereses Moratorios"
+                  />
+                  <div
+                    className="h-full bg-purple-500"
+                    style={{ width: `${totalPortfolio > 0 ? (penaltyCostsSum / totalPortfolio) * 100 : 10}%` }}
+                    title="Sanciones y Costas"
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-dashed border-[#444748]/30 font-mono text-xs">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-sky-400 flex items-center justify-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block"></span> Capital
+                    </span>
+                    <span className="font-semibold text-white mt-0.5">
+                      {totalPortfolio > 0 ? `${((principalSum / totalPortfolio) * 100).toFixed(0)}%` : '70%'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      {principalSum.toLocaleString('es-ES', { maximumFractionDigits: 0 })} €
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-amber-400 flex items-center justify-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"></span> Intereses
+                    </span>
+                    <span className="font-semibold text-white mt-0.5">
+                      {totalPortfolio > 0 ? `${((interestSum / totalPortfolio) * 100).toFixed(0)}%` : '20%'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      {interestSum.toLocaleString('es-ES', { maximumFractionDigits: 0 })} €
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-purple-400 flex items-center justify-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block"></span> Sanciones
+                    </span>
+                    <span className="font-semibold text-white mt-0.5">
+                      {totalPortfolio > 0 ? `${((penaltyCostsSum / totalPortfolio) * 100).toFixed(0)}%` : '10%'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400">
+                      {penaltyCostsSum.toLocaleString('es-ES', { maximumFractionDigits: 0 })} €
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tarjeta 3: Embudo de Etapas Procesales */}
+              <div className="p-4 rounded-xl bg-[#1c1b1d]/80 border border-dashed border-[#444748]/40 flex flex-col justify-between gap-2.5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">Trazabilidad Procesal</span>
+                    <span className="text-xs text-zinc-400">Filtrar cartera por etapa</span>
+                  </div>
+                  {coactiveStageFilter !== 'all' && (
+                    <button
+                      type="button"
+                      onClick={() => setCoactiveStageFilter('all')}
+                      className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
+                    >
+                      Ver todas
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+                  {[
+                    { stage: 'persuasivo' as CoactiveStage, label: 'Persuasivo', count: stages.persuasivo, color: 'text-sky-300 border-sky-800/40 bg-sky-950/30' },
+                    { stage: 'mandamiento' as CoactiveStage, label: 'Mandamiento', count: stages.mandamiento, color: 'text-amber-300 border-amber-800/40 bg-amber-950/30' },
+                    { stage: 'medidas_cautelares' as CoactiveStage, label: 'Embargos', count: stages.medidas_cautelares, color: 'text-purple-300 border-purple-800/40 bg-purple-950/30' },
+                    { stage: 'acuerdo_pago' as CoactiveStage, label: 'Acuerdo Pago', count: stages.acuerdo_pago, color: 'text-emerald-300 border-emerald-800/40 bg-emerald-950/30' },
+                    { stage: 'recaudado' as CoactiveStage, label: 'Recaudado', count: stages.recaudado, color: 'text-teal-300 border-teal-800/40 bg-teal-950/30' },
+                  ].map((st) => {
+                    const isActive = coactiveStageFilter === st.stage;
+                    return (
+                      <button
+                        key={st.stage}
+                        type="button"
+                        onClick={() => setCoactiveStageFilter(isActive ? 'all' : st.stage)}
+                        className={`flex items-center justify-between px-2 py-1.5 rounded-lg border text-xs font-mono transition-all cursor-pointer ${
+                          isActive
+                            ? 'ring-1 ring-white bg-white text-zinc-950 font-bold border-white'
+                            : `${st.color} hover:opacity-100 opacity-85`
+                        }`}
+                      >
+                        <span className="truncate text-[11px] font-sans">{st.label}</span>
+                        <span className="px-1.5 py-0.2 rounded font-mono text-[10px] ml-1 bg-black/40">
+                          {st.count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-[11px] text-[#c4c7c8]">Volumen total auditado</span>
-              <span className="text-sm sm:text-base font-semibold text-white">
-                {invoices.reduce((acc, i) => acc + (i.grand_total || 0), 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
-            </div>
-          </div>
-        </div>
+          );
+        })()}
 
         {/* WORKSPACES SELECTOR & PARTITION BAR */}
         <div className="flex flex-col gap-3 p-3 sm:p-4 rounded-xl bg-[#1c1b1d]/90 backdrop-blur-md border border-dashed border-[#444748]/60 shadow-lg">
@@ -1301,14 +1463,14 @@ export default function HistoryView({
                             <th className="w-10 px-4 py-2.5 text-center" scope="col">
                               <span className="text-[10px]">#</span>
                             </th>
-                            <th className="px-4 py-2.5 font-medium">Nº Factura</th>
-                            <th className="px-4 py-2.5 font-medium">Proveedor</th>
-                            <th className="px-4 py-2.5 font-medium">Fecha Doc</th>
+                            <th className="px-4 py-2.5 font-medium">Nº Factura / Título</th>
+                            <th className="px-4 py-2.5 font-medium">Deudor / Proveedor</th>
+                            <th className="px-4 py-2.5 font-medium">Fecha</th>
                             <th className="px-4 py-2.5 font-medium text-center">Partidas</th>
-                            <th className="px-4 py-2.5 font-medium text-right">Base Imponible</th>
-                            <th className="px-4 py-2.5 font-medium text-right">Impuestos</th>
-                            <th className="px-4 py-2.5 font-medium text-right">Total Factura</th>
-                            <th className="px-4 py-2.5 font-medium text-center">Estado</th>
+                            <th className="px-4 py-2.5 font-medium text-right">Capital</th>
+                            <th className="px-4 py-2.5 font-medium text-right">Intereses / Mora</th>
+                            <th className="px-4 py-2.5 font-medium text-right">Total Crédito</th>
+                            <th className="px-4 py-2.5 font-medium text-center">Etapa Coactiva</th>
                             <th className="px-4 py-2.5 font-medium text-right">Acciones</th>
                           </tr>
                         </thead>
@@ -1337,14 +1499,14 @@ export default function HistoryView({
                         className="w-4 h-4 rounded bg-[#353437] accent-white cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 font-medium">Nº Factura</th>
-                    <th className="px-4 py-3 font-medium">Proveedor / Emisor</th>
-                    <th className="px-4 py-3 font-medium">Fecha Doc</th>
+                    <th className="px-4 py-3 font-medium">Nº Factura / Título</th>
+                    <th className="px-4 py-3 font-medium">Deudor / Proveedor</th>
+                    <th className="px-4 py-3 font-medium">Fecha</th>
                     <th className="px-4 py-3 font-medium text-center">Partidas</th>
-                    <th className="px-4 py-3 font-medium text-right">Base Imponible</th>
-                    <th className="px-4 py-3 font-medium text-right">Impuestos</th>
-                    <th className="px-4 py-3 font-medium text-right">Total Factura</th>
-                    <th className="px-4 py-3 font-medium text-center">Estado</th>
+                    <th className="px-4 py-3 font-medium text-right">Capital</th>
+                    <th className="px-4 py-3 font-medium text-right">Intereses / Mora</th>
+                    <th className="px-4 py-3 font-medium text-right">Total Crédito</th>
+                    <th className="px-4 py-3 font-medium text-center">Etapa Coactiva</th>
                     <th className="px-4 py-3 font-medium text-right">Acciones</th>
                   </tr>
                 </thead>

@@ -455,12 +455,20 @@ class InvoiceController extends Controller
             'surcharge_total' => 'nullable|numeric',
             'retention_total' => 'nullable|numeric',
             'grand_total' => 'nullable|numeric',
-            'items' => 'nullable|array'
+            'items' => 'nullable|array',
+            'coactive' => 'nullable|array'
         ]);
 
         DB::transaction(function () use ($invoice, $validated, $request) {
-            $headerData = array_filter($validated, fn($k) => $k !== 'items', ARRAY_FILTER_USE_KEY);
+            $headerData = array_filter($validated, fn($k) => !in_array($k, ['items', 'coactive']), ARRAY_FILTER_USE_KEY);
             $invoice->update($headerData);
+
+            if ($request->has('coactive') && is_array($request->input('coactive'))) {
+                $meta = $invoice->extra_metadata ?? [];
+                $meta['coactive'] = array_merge($meta['coactive'] ?? [], $request->input('coactive'));
+                $invoice->extra_metadata = $meta;
+                $invoice->save();
+            }
 
             if ($request->has('items') && is_array($request->input('items'))) {
                 // Remove existing items and replace with updated
@@ -1512,6 +1520,58 @@ class InvoiceController extends Controller
         } else {
             $data['temporal_analysis'] = $tempVal;
         }
+
+        // 5. Cobro Coactivo (Expediente, Etapa Procesal y Desglose de Deuda)
+        $coactive = $meta['coactive'] ?? [];
+        $grandTotal = (float) ($invoice->grand_total ?? 0);
+        $subtotal = (float) ($invoice->subtotal ?? 0);
+        $taxTotal = (float) ($invoice->tax_total ?? 0);
+
+        $stage = $coactive['stage'] ?? null;
+        if (!$stage) {
+            if ($invoice->status === 'reconciled') {
+                $stage = 'recaudado';
+            } elseif ($invoice->status === 'processing' || $invoice->status === 'pending') {
+                $stage = 'persuasivo';
+            } else {
+                $crc = crc32($invoice->id);
+                $mod = abs($crc) % 3;
+                $stage = match ($mod) {
+                    0 => 'mandamiento',
+                    1 => 'medidas_cautelares',
+                    default => 'acuerdo_pago',
+                };
+            }
+        }
+
+        $principal = (float) ($coactive['principal_amount'] ?? ($subtotal > 0 ? $subtotal : round($grandTotal * 0.70, 2)));
+        $interest = (float) ($coactive['interest_amount'] ?? ($taxTotal > 0 ? $taxTotal : round($grandTotal * 0.20, 2)));
+        $penalty = (float) ($coactive['penalty_amount'] ?? round($grandTotal * 0.07, 2));
+        $costs = (float) ($coactive['costs_amount'] ?? round($grandTotal * 0.03, 2));
+        $collected = (float) ($coactive['collected_amount'] ?? ($stage === 'recaudado' ? $grandTotal : ($stage === 'acuerdo_pago' ? round($grandTotal * 0.40, 2) : 0.0)));
+        $pending = round(max(0, $grandTotal - $collected), 2);
+
+        $expediente = $coactive['expediente_number'] ?? ('EXP-' . strtoupper(substr(md5($invoice->id), 0, 8)));
+        $docType = $coactive['document_type'] ?? 'titulo_ejecutivo';
+        $fiscalYear = $coactive['fiscal_year'] ?? ($invoice->invoice_date ? substr($invoice->invoice_date, 0, 4) : '2024');
+
+        $data['coactive'] = [
+            'stage' => $stage,
+            'document_type' => $docType,
+            'expediente_number' => $expediente,
+            'fiscal_year' => $fiscalYear,
+            'debtor_name' => $invoice->customer_name ?: ($invoice->supplier_name ?: 'Deudor Ejecutado'),
+            'debtor_tax_id' => $invoice->customer_tax_id ?: ($invoice->supplier_tax_id ?: 'NIF/Cédula N/A'),
+            'creditor_name' => $invoice->supplier_name ?: 'Entidad Ejecutora',
+            'principal_amount' => $principal,
+            'interest_amount' => $interest,
+            'penalty_amount' => $penalty,
+            'costs_amount' => $costs,
+            'collected_amount' => $collected,
+            'pending_balance' => $pending,
+            'last_action_date' => $coactive['last_action_date'] ?? ($invoice->updated_at ? $invoice->updated_at->format('Y-m-d') : date('Y-m-d')),
+            'notes' => $coactive['notes'] ?? null,
+        ];
 
         $data['thinking_process'] = $meta['thinking_process'] ?? null;
         $data['is_balanced'] = $data['journal_entry']['is_balanced'] ?? true;

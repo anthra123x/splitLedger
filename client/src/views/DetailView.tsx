@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { updateInvoice, fetchAccountingRules, fetchWorkspaces } from '../services/api';
 import { exportInvoicePdf } from '../services/pdfExportService';
-import { Invoice, InvoiceItem, Workspace } from '../types/index.js';
+import { Invoice, InvoiceItem, Workspace, CoactiveStage } from '../types/index.js';
 import ScanningAnimationCard from '../components/ScanningAnimationCard';
 import { cleanSupplierName, cleanSupplierTaxId } from '../utils/formatters';
 
@@ -61,6 +61,28 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
     return 'split';
   });
 
+  const [coactiveStage, setCoactiveStage] = useState<CoactiveStage>(() => invoice?.coactive?.stage || 'persuasivo');
+
+  const handleCoactiveStageChange = async (newStage: CoactiveStage) => {
+    setCoactiveStage(newStage);
+    if (!invoice?.id) return;
+    try {
+      const res = await updateInvoice(invoice.id, {
+        coactive: {
+          stage: newStage,
+          last_action_date: new Date().toISOString().substring(0, 10)
+        }
+      });
+      if (res.data && onInvoiceUpdated) {
+        onInvoiceUpdated(res.data);
+      }
+      setSaveMessage(`[ETAPA] ${newStage.toUpperCase()} registrada`);
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (err) {
+      console.error('Error al actualizar etapa coactiva:', err);
+    }
+  };
+
   const isSplit = activeLayoutTab === 'split';
   const showDocument = activeLayoutTab === 'document' || isSplit;
   const showItems = activeLayoutTab === 'items' || isSplit;
@@ -112,6 +134,7 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
   useEffect(() => {
     setItems(invoice?.items || []);
     setCurrentWorkspaceId(invoice?.workspace_id || null);
+    setCoactiveStage(invoice?.coactive?.stage || 'persuasivo');
   }, [invoice]);
 
   useEffect(() => {
@@ -502,6 +525,56 @@ export default function DetailView({ invoice, onInvoiceUpdated, onBack, backLabe
                 <span className="material-symbols-outlined text-[16px]">check</span>
                 <span>{isSaving ? 'Guardando...' : 'Conciliar'}</span>
               </button>
+            </div>
+          </div>
+        </section>
+
+        {/* BARRA EJECUTIVA DE EXPEDIENTE DE COBRO COACTIVO */}
+        <section className="w-full px-4 sm:px-6 py-2.5 bg-[#171618] border-b border-dashed border-[#444748]/40">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            {/* Left: Expediente Info & Deudor */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/60 text-white font-mono">
+                <span className="material-symbols-outlined text-[15px] text-sky-400">gavel</span>
+                <span className="font-bold">{invoice?.coactive?.expediente_number || `EXP-${(invoice?.id || '0000').substring(0, 8).toUpperCase()}`}</span>
+              </div>
+              <div className="flex items-center gap-2 text-zinc-300">
+                <span>Ejecutado: <strong className="text-white">{invoice?.coactive?.debtor_name || invoice?.customer_name || invoice?.supplier_name}</strong></span>
+                <span className="text-zinc-500 font-mono">({invoice?.coactive?.debtor_tax_id || invoice?.customer_tax_id || invoice?.supplier_tax_id || 'N/D'})</span>
+                <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] font-mono text-zinc-400">
+                  Vigencia: {invoice?.coactive?.fiscal_year || '2024'}
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Interactive Coactive Stage Selector */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] text-zinc-400 font-sans">Etapa Procesal:</span>
+              <div className="inline-flex items-center p-0.5 rounded-lg bg-[#201f22] border border-dashed border-[#444748]/50">
+                {[
+                  { stage: 'persuasivo' as CoactiveStage, label: 'Persuasivo', activeClass: 'bg-sky-500 text-white font-bold' },
+                  { stage: 'mandamiento' as CoactiveStage, label: 'Mandamiento', activeClass: 'bg-amber-500 text-zinc-950 font-bold' },
+                  { stage: 'medidas_cautelares' as CoactiveStage, label: 'Embargos', activeClass: 'bg-purple-500 text-white font-bold' },
+                  { stage: 'acuerdo_pago' as CoactiveStage, label: 'Acuerdo', activeClass: 'bg-emerald-500 text-white font-bold' },
+                  { stage: 'recaudado' as CoactiveStage, label: 'Recaudado', activeClass: 'bg-teal-500 text-white font-bold' },
+                ].map((s) => {
+                  const isCurrent = coactiveStage === s.stage;
+                  return (
+                    <button
+                      key={s.stage}
+                      type="button"
+                      onClick={() => handleCoactiveStageChange(s.stage)}
+                      className={`px-2.5 py-1 rounded-md text-[11px] transition-all cursor-pointer ${
+                        isCurrent
+                          ? `${s.activeClass} shadow-sm`
+                          : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </section>

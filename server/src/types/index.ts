@@ -56,6 +56,47 @@ export interface Invoice {
   updated_at: string;
   items?: InvoiceItem[];
   items_count?: number;
+  coactive?: CoactiveData | null;
+}
+
+export type CoactiveStage = 'persuasivo' | 'mandamiento' | 'medidas_cautelares' | 'acuerdo_pago' | 'recaudado';
+
+export type CoactiveDocumentType = 'titulo_ejecutivo' | 'mandamiento_pago' | 'acuerdo_pago' | 'factura_coactiva';
+
+export interface CoactiveData {
+  stage: CoactiveStage;
+  document_type: CoactiveDocumentType;
+  expediente_number: string;
+  fiscal_year: string;
+  debtor_name: string;
+  debtor_tax_id: string;
+  creditor_name: string;
+  principal_amount: number;
+  interest_amount: number;
+  penalty_amount: number;
+  costs_amount: number;
+  collected_amount: number;
+  pending_balance: number;
+  last_action_date?: string;
+  notes?: string;
+}
+
+export interface CoactiveMetrics {
+  total_portfolio: number;
+  total_collected: number;
+  recovery_rate: number;
+  pending_balance: number;
+  principal_sum: number;
+  interest_sum: number;
+  penalty_sum: number;
+  costs_sum: number;
+  stages_distribution: {
+    persuasivo: number;
+    mandamiento: number;
+    medidas_cautelares: number;
+    acuerdo_pago: number;
+    recaudado: number;
+  };
 }
 
 export interface SystemMetrics {
@@ -63,6 +104,7 @@ export interface SystemMetrics {
   reconciled_volume: number;
   total_items: number;
   avg_confidence: string;
+  coactive?: CoactiveMetrics;
 }
 
 export interface EngineStats {
